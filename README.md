@@ -23,6 +23,6 @@ This project includes:
 
  :bust_in_silhouette: [Beatriz Stransky](https://github.com/bia-stransky) [(Associate Professor, Phd, UFRN)](http://lattes.cnpq.br/3142264445097872)
  
-  :bust_in_silhouette: [Dhiego Souto](https://github.com/dhiego22) [PhD Student, UFRN)](http://lattes.cnpq.br/7232169055258869)
+  :bust_in_silhouette: [Dhiego Souto](https://github.com/dhiego22) [(PhD Student, UFRN)](http://lattes.cnpq.br/7232169055258869)
  
  :bust_in_silhouette: [Patrick Terrematte](https://github.com/terrematte) [(Assistant Professor, UFERSA; PhD Student, UFRN)](http://lattes.cnpq.br/4283045850342312)
