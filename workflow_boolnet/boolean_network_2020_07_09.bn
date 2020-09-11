@@ -1,0 +1,26 @@
+targets,factors
+O2, 0
+HIF1a, !O2 & !mdm2
+HIF2a, !O2 & !HIF1a 
+p53, !O2 
+BNIP3, HIF1a 
+VEGF, HIF1a | HIF2a  
+cMyc, HIF2a & !HIF1a
+Oct4, HIF2a & !HIF1a
+cycD, O2
+Rb, (!cycD & !cycE & !cycA & !cycB) | (p27 & !cycD & !cycB)
+E2F, (!Rb & !cycA & !cycB) | (p27 & !Rb & !cycB)
+cycE, E2F & ! Rb
+cycA, (E2F & !Rb & !cdc20) | (cycA & !Rb & !cdc20)
+p27, ((!cycD & !cycE & !cycA & !cycB) | (p27 & !(cycE & cycA) & !cycB & cycD)) & !cMyc
+cdc20, cycB & !p53
+cdh1, (!cycA & !cycB) | cdc20 | (p27 & !cycB)
+cycB, !cdc20 & !cdh1
+mdm2, p53 & !HIF1a
+BAD, p53 & !Oct4
+BclX, (!BNIP3 | !BAD) & VEGF
+Mito, !BclX & p53
+IAP, VEGF & !Mito 
+Apaf, p53
+APC, Mito & Apaf
+casp3, APC & !IAP

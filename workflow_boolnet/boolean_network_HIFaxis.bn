@@ -1,0 +1,16 @@
+targets,factors
+O2, 0
+VHL, O2 & !PLC
+HIF1a, !VHL & ((!p53 & p300) & !mdm2)
+HIF2a, !HIF1a & !VHL & (p300 | mTOR)
+p53, ((! O2 & ((!HIF1a & p300) & !mdm2)) | HIF1a) | (!VHL & !HIF2a)
+REDD1, HIF1a
+mTOR, GFs & !REDD1 & !BNIP3 | (HIF2a & !VHL) 
+AKT, mTOR
+mdm2, AKT & p53
+PLC, GFs
+p300, PLC
+cMyc, HIF2a & !HIF1a
+VEGF, HIF1a | HIF2a
+BNIP3, HIF1a
+TCF3, HIF1a

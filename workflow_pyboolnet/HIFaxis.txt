@@ -1,0 +1,14 @@
+VHL *= O2 and not PLC
+HIF1a *= not VHL and ((not p53 and p300) and not mdm2)
+HIF2a *= not HIF1a and not VHL and (p300 or mTOR)
+p53 *= ((not O2 and ((not HIF1a and p300) and not mdm2)) or HIF1a) or (not VHL and not HIF2a)
+REDD1 *= HIF1a
+mTOR *= GFs and not REDD1 and not BNIP3 or (HIF2a and not VHL) 
+AKT *= mTOR
+mdm2 *= AKT and p53
+PLC *= GFs
+p300 *= PLC
+cMyc *= HIF2a and not HIF1a
+VEGF *= HIF1a or HIF2a
+BNIP3 *= HIF1a
+TCF3 *=HIF1a
