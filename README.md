@@ -17,6 +17,15 @@ This project includes:
   * [GSE142867](workflow_differential_expression/pipeline_GSE142867.md) presents RNA-sequencing data on erythropoietic cells cultured in normoxia or hypoxia at days 3, 7, and 10.
   
   
+# Datasets
+
+ * [GSE41491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41491)	2012 / DU145, HT29, MCF7 /	prostate, colon, breast	/ 1h, 2h, 4h, 8h, 12h, 16h, 24h	/	microarray
+ * [GSE52695](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52695)	2016	/ A2780	/ ovarian /	6h, 48h, 6d	/	rna-seq
+ 
+ 
+ 
+  
+  
 #### Authors :busts_in_silhouette:
 
  :bust_in_silhouette: [Alexandre Sarmento ](https://github.com/AlexandreSarmento) [(Postdoc, UFRN)](http://lattes.cnpq.br/9217490794056337)
