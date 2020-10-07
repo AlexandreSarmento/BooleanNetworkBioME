@@ -65,7 +65,7 @@ par(mfrow=c(1, length(attr.asyn$attractors)))
 plotAttractors(attr.asyn, mode="graph")
 ```
 
-```{r}
+```{r fig.width=100%}
 plotStateGraph(attr.syn)
 ```
 

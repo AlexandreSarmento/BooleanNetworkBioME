@@ -1,0 +1,359 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r message=FALSE, warning=FALSE}
+#setwd("~/boolnet")
+
+if(!require("igraph")){install.packages('igraph')}
+
+if(!require("BoolNet")){install.packages('BoolNet')}
+
+if(!require("BiocManager")){BiocManager::install("BiocManager")}# Install bioconductor
+
+if(!require("dplyr")){BiocManager::install("dplyr")}# Install dplyr
+
+if(!require("Biobase")){BiocManager::install("Biobase")}# Install Biobase
+
+if(!require("GEOquery")){BiocManager::install("GEOquery")}# Install GEOquery
+
+```
+
+```{r}
+# Reading data
+gse <- getGEO("GSE18494", destdir = "../data/GSE18494", GSEMatrix = FALSE)
+gsmplatforms <- lapply(GSMList(gse),function(x) {Meta(x)$platform_id})
+gsmlist = Filter(function(gsm) {Meta(gsm)$platform_id=='GPL9419'},GSMList(gse))
+probesets <- Table(GPLList(gse)[[1]])$ID
+data.matrix <- do.call('cbind',lapply(gsmlist,function(x) 
+{tab <- Table(x)
+mymatch <- match(probesets,tab$ID_REF)
+return(tab$VALUE[mymatch])
+}))
+rownames(data.matrix) <- probesets
+df <- as.data.frame(data.matrix)
+```
+
+```{r}
+names(df)[names(df) == "GSM460669"] <- "norm.control.H1"
+names(df)[names(df) == "GSM460670"] <- "norm.control.H2"
+names(df)[names(df) == "GSM460671"] <- "norm.control.H3"
+names(df)[names(df) == "GSM460672"] <- "hypo.4h.H1"
+names(df)[names(df) == "GSM460673"] <- "hypo.4h.H2"
+names(df)[names(df) == "GSM460674"] <- "hypo.4h.H3"
+names(df)[names(df) == "GSM460675"] <- "hypo.8h.H1"
+names(df)[names(df) == "GSM460676"] <- "hypo.8h.H2"
+names(df)[names(df) == "GSM460677"] <- "hypo.8h.H3"
+names(df)[names(df) == "GSM460678"] <- "hypo.12h.H1"
+names(df)[names(df) == "GSM460679"] <- "hypo.12h.H2"
+names(df)[names(df) == "GSM460680"] <- "hypo.12h.H3"
+
+
+names(df)[names(df) == "GSM460681"] <- "norm.control.U1"
+names(df)[names(df) == "GSM460682"] <- "norm.control.U2"
+names(df)[names(df) == "GSM460683"] <- "norm.control.U3"
+names(df)[names(df) == "GSM460684"] <- "hypo.4h.U1"
+names(df)[names(df) == "GSM460685"] <- "hypo.4h.U2"
+names(df)[names(df) == "GSM460686"] <- "hypo.4h.U3"
+names(df)[names(df) == "GSM460687"] <- "hypo.8h.U1"
+names(df)[names(df) == "GSM460688"] <- "hypo.8h.U2"
+names(df)[names(df) == "GSM460689"] <- "hypo.8h.U3"
+names(df)[names(df) == "GSM460690"] <- "hypo.12h.U1"
+names(df)[names(df) == "GSM460691"] <- "hypo.12h.U2"
+names(df)[names(df) == "GSM460692"] <- "hypo.12h.U3"
+
+
+names(df)[names(df) == "GSM460693"] <- "norm.control.M1"
+names(df)[names(df) == "GSM460694"] <- "norm.control.M2"
+names(df)[names(df) == "GSM460695"] <- "norm.control.M3"
+names(df)[names(df) == "GSM460696"] <- "hypo.4h.M1"
+names(df)[names(df) == "GSM460697"] <- "hypo.4h.M2"
+names(df)[names(df) == "GSM460698"] <- "hypo.4h.M3"
+names(df)[names(df) == "GSM460699"] <- "hypo.8h.M1"
+names(df)[names(df) == "GSM460700"] <- "hypo.8h.M2"
+names(df)[names(df) == "GSM460701"] <- "hypo.8h.M3"
+names(df)[names(df) == "GSM460702"] <- "hypo.12h.M1"
+names(df)[names(df) == "GSM460703"] <- "hypo.12h.M2"
+names(df)[names(df) == "GSM460704"] <- "hypo.12h.M3"
+```
+
+
+```{r}
+# Separating replicas
+
+# Breast Cancer
+breast1 <- df[c("norm.control.M1", "hypo.4h.M1", "hypo.8h.M1","hypo.12h.M1")]
+breast2 <- df[c("norm.control.M2", "hypo.4h.M2", "hypo.8h.M2","hypo.12h.M2")]
+breast3 <- df[c("norm.control.M3", "hypo.4h.M3", "hypo.8h.M3","hypo.12h.M3")]
+
+
+# Glioma Cancer
+glioma1 <- df[c("norm.control.U1", "hypo.4h.U1", "hypo.8h.U1","hypo.12h.U1")]
+glioma2 <- df[c("norm.control.U2", "hypo.4h.U2", "hypo.8h.U2","hypo.12h.U2")]
+glioma3 <- df[c("norm.control.U3", "hypo.4h.U3", "hypo.8h.U3","hypo.12h.U3")]
+
+
+# Hepatoma Cancer
+hepatoma1 <- df[c("norm.control.H1", "hypo.4h.H1", "hypo.8h.H1","hypo.12h.H1")]
+hepatoma2 <- df[c("norm.control.H2", "hypo.4h.H2", "hypo.8h.H2","hypo.12h.H2")]
+hepatoma3 <- df[c("norm.control.H3", "hypo.4h.H3", "hypo.8h.H3","hypo.12h.H3")]
+```
+
+
+```{r}
+row.names(df) = substr(row.names(df),1,nchar(row.names(df))-3)
+
+row.names(breast1) = substr(row.names(breast1),1,nchar(row.names(breast1))-3)
+row.names(breast2) = substr(row.names(breast2),1,nchar(row.names(breast2))-3)
+row.names(breast3) = substr(row.names(breast3),1,nchar(row.names(breast3))-3)
+
+row.names(glioma1) = substr(row.names(glioma1),1,nchar(row.names(glioma1))-3)
+row.names(glioma2) = substr(row.names(glioma2),1,nchar(row.names(glioma2))-3)
+row.names(glioma3) = substr(row.names(glioma3),1,nchar(row.names(glioma3))-3)
+
+row.names(hepatoma1) = substr(row.names(hepatoma1),1,nchar(row.names(hepatoma1))-3)
+row.names(hepatoma2) = substr(row.names(hepatoma2),1,nchar(row.names(hepatoma2))-3)
+row.names(hepatoma3) = substr(row.names(hepatoma3),1,nchar(row.names(hepatoma3))-3)
+
+mart<- biomaRt::useMart(biomart = 'ensembl', dataset = 'hsapiens_gene_ensembl')
+
+# mapping example
+refseq_mapping <- biomaRt::getBM(attributes = c("refseq_mrna","hgnc_symbol"), 
+                        filters="refseq_mrna", # you swap out of this filter for whatever your input is
+                        values=row.names(df), # vector of your NMf
+                        mart=mart)
+
+refseq_mapping <- as.data.frame(refseq_mapping)
+names(refseq_mapping)[names(refseq_mapping) == "refseq_mrna"] <- "ID_REF"
+df$ID_REF <- row.names(df)
+df <- merge(df, refseq_mapping, by = "ID_REF")
+
+breast1$ID_REF <- row.names(breast1)
+breast1 <- merge(breast1, refseq_mapping, by = "ID_REF")
+breast2$ID_REF <- row.names(breast2)
+breast2 <- merge(breast2, refseq_mapping, by = "ID_REF")
+breast3$ID_REF <- row.names(breast3)
+breast3 <- merge(breast3, refseq_mapping, by = "ID_REF")
+
+glioma1$ID_REF <- row.names(glioma1)
+glioma1 <- merge(glioma1, refseq_mapping, by = "ID_REF")
+glioma2$ID_REF <- row.names(glioma2)
+glioma2 <- merge(glioma2, refseq_mapping, by = "ID_REF")
+glioma3$ID_REF <- row.names(glioma3)
+glioma3 <- merge(glioma3, refseq_mapping, by = "ID_REF")
+
+hepatoma1$ID_REF <- row.names(hepatoma1)
+hepatoma1 <- merge(hepatoma1, refseq_mapping, by = "ID_REF")
+hepatoma2$ID_REF <- row.names(hepatoma2)
+hepatoma2 <- merge(hepatoma2, refseq_mapping, by = "ID_REF")
+hepatoma3$ID_REF <- row.names(hepatoma3)
+hepatoma3 <- merge(hepatoma3, refseq_mapping, by = "ID_REF")
+```
+
+```{r}
+saveRDS(df, file = "../data/GSE18494.rds")
+#df <- readRDS("GSE47534.rds")
+```
+
+```{r}
+breast1 <- breast1[ which(breast1$hgnc_symbol=='HIF1A'
+                      | breast1$hgnc_symbol=='EP300'
+                      | breast1$hgnc_symbol=='VHL'
+                      | breast1$hgnc_symbol=='MDM2'
+                      | breast1$hgnc_symbol=='TP53'), ]
+breast1 <- unique( breast1[ , 2:ncol(breast1)] )
+
+breast2 <- breast2[ which(breast2$hgnc_symbol=='HIF1A'
+                      | breast2$hgnc_symbol=='EP300'
+                      | breast2$hgnc_symbol=='VHL'
+                      | breast2$hgnc_symbol=='MDM2'
+                      | breast2$hgnc_symbol=='TP53'), ]
+breast2 <- unique( breast2[ , 2:ncol(breast2)] )
+
+breast3 <- breast3[ which(breast3$hgnc_symbol=='HIF1A'
+                      | breast3$hgnc_symbol=='EP300'
+                      | breast3$hgnc_symbol=='VHL'
+                      | breast3$hgnc_symbol=='MDM2'
+                      | breast3$hgnc_symbol=='TP53'), ]
+breast3 <- unique( breast3[ , 2:ncol(breast3)] )
+
+glioma1 <- glioma1[ which(glioma1$hgnc_symbol=='HIF1A'
+                      | glioma1$hgnc_symbol=='EP300'
+                      | glioma1$hgnc_symbol=='VHL'
+                      | glioma1$hgnc_symbol=='MDM2'
+                      | glioma1$hgnc_symbol=='TP53'), ]
+glioma1 <- unique( glioma1[ , 2:ncol(glioma1)] )
+
+glioma2 <- glioma2[ which(glioma2$hgnc_symbol=='HIF1A'
+                      | glioma2$hgnc_symbol=='EP300'
+                      | glioma2$hgnc_symbol=='VHL'
+                      | glioma2$hgnc_symbol=='MDM2'
+                      | glioma2$hgnc_symbol=='TP53'), ]
+glioma2 <- unique( glioma2[ , 2:ncol(glioma2)] )
+
+glioma3 <- glioma3[ which(glioma3$hgnc_symbol=='HIF1A'
+                      | glioma3$hgnc_symbol=='EP300'
+                      | glioma3$hgnc_symbol=='VHL'
+                      | glioma3$hgnc_symbol=='MDM2'
+                      | glioma3$hgnc_symbol=='TP53'), ]
+glioma3 <- unique( glioma3[ , 2:ncol(glioma3)] )
+
+
+hepatoma1 <- hepatoma1[ which(hepatoma1$hgnc_symbol=='HIF1A'
+                      | hepatoma1$hgnc_symbol=='EP300'
+                      | hepatoma1$hgnc_symbol=='VHL'
+                      | hepatoma1$hgnc_symbol=='MDM2'
+                      | hepatoma1$hgnc_symbol=='TP53'), ]
+hepatoma1 <- unique( hepatoma1[ , 2:ncol(hepatoma1)] )
+
+hepatoma2 <- hepatoma2[ which(hepatoma2$hgnc_symbol=='HIF1A'
+                      | hepatoma2$hgnc_symbol=='EP300'
+                      | hepatoma2$hgnc_symbol=='VHL'
+                      | hepatoma2$hgnc_symbol=='MDM2'
+                      | hepatoma2$hgnc_symbol=='TP53'), ]
+hepatoma2 <- unique( hepatoma2[ , 2:ncol(hepatoma2)] )
+
+hepatoma3 <- hepatoma3[ which(hepatoma3$hgnc_symbol=='HIF1A'
+                      | hepatoma3$hgnc_symbol=='EP300'
+                      | hepatoma3$hgnc_symbol=='VHL'
+                      | hepatoma3$hgnc_symbol=='MDM2'
+                      | hepatoma3$hgnc_symbol=='TP53'), ]
+hepatoma3 <- unique( hepatoma3[ , 2:ncol(hepatoma3)] )
+```
+
+1559227_s_at	ENSG00000134086	VHL	von Hippel-Lindau tumor suppressor
+	
+201472_at	ENSG00000155959	VBP1	VHL binding protein 1
+
+203844_at	ENSG00000134086	VHL	von Hippel-Lindau tumor suppressor
+
+Não encontrei o VHL nesse dataset
+Possiveis aliases segundo gene cards -> PVHL, Von Hippel-Lindau Syndrome, Elongin Binding Protein, HRCA1, RCA1, VHLL
+
+HIF1A duplicado
+
+```{r}
+row.names(breast1) <- breast1$hgnc_symbol
+breast1 <- breast1[, -5]  
+bin <- binarizeTimeSeries(breast1, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(breast2) <- breast2$hgnc_symbol
+breast2 <- breast2[, -5]  
+bin <- binarizeTimeSeries(breast2, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(breast3) <- breast3$hgnc_symbol
+breast3 <- breast3[, -5]  
+bin <- binarizeTimeSeries(breast3, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(glioma1) <- glioma1$hgnc_symbol
+glioma1 <- glioma1[, -5]  
+bin <- binarizeTimeSeries(glioma1, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(glioma2) <- glioma2$hgnc_symbol
+glioma2 <- glioma2[, -5]  
+bin <- binarizeTimeSeries(glioma2, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(glioma3) <- glioma3$hgnc_symbol
+glioma3 <- glioma3[, -5]  
+bin <- binarizeTimeSeries(glioma3, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(hepatoma1) <- hepatoma1$hgnc_symbol
+hepatoma1 <- hepatoma1[, -5]  
+bin <- binarizeTimeSeries(hepatoma1, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(hepatoma2) <- hepatoma2$hgnc_symbol
+hepatoma2 <- hepatoma2[, -5]  
+bin <- binarizeTimeSeries(hepatoma2, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+row.names(hepatoma3) <- hepatoma3$hgnc_symbol
+hepatoma3 <- hepatoma3[, -5]  
+bin <- binarizeTimeSeries(hepatoma3, method="kmeans")$binarizedMeasurements
+bin = rbind(bin,c(1,0,0,0))
+row.names(bin)[5] <- "O2"
+net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+```
+
+```{r}
+# Reading data
+gse <- getGEO("GSE47534", destdir = "..", GSEMatrix = FALSE)
+gsmplatforms <- lapply(GSMList(gse),function(x) {Meta(x)$platform_id})
+gsmlist = Filter(function(gsm) {Meta(gsm)$platform_id=='GPL6884'},GSMList(gse))
+probesets <- Table(GPLList(gse)[[1]])$ID
+data.matrix <- do.call('cbind',lapply(gsmlist,function(x) 
+{tab <- Table(x)
+mymatch <- match(probesets,tab$ID_REF)
+return(tab$VALUE[mymatch])
+}))
+rownames(data.matrix) <- probesets
+df <- as.data.frame(data.matrix)
+```
+
+```{r}
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

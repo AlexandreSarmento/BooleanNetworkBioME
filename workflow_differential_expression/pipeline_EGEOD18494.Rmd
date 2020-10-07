@@ -40,18 +40,7 @@ https://www.bioconductor.org/packages/devel/workflows/vignettes/maEndToEnd/inst/
 
     
 ```{r message=FALSE, warning=FALSE}
-
-packages_bioconductor = c("Biobase","ArrayExpress", "hgu133plus2.db", "oligo", "DESeq2", "Glimma", "limma", "clusterProfiler", "topGO")
-
-# Install and load packages
-package.check <- lapply(packages_bioconductor, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    BiocManager::install(x, dependencies = TRUE)
-    library(x, character.only = TRUE)
-  }
-})
-
-packages_cran = c("DT", "tidyverse","dplyr", "tibble", "data.table", "stats", "ggpubr", "ggplot2", "RColorBrewer", "ggrepel", "pheatmap","ComplexHeatmap", "gapminder", "ggstatsplot", "fs")
+packages_cran = c("DT", "tidyverse","dplyr", "tibble", "data.table", "stats", "ggpubr", "ggplot2", "RColorBrewer", "ggrepel", "pheatmap", "gapminder", "fs")
 
 # For ggstatsplot, might be needed execute:
 # sudo apt-get install libgmp-dev
@@ -61,6 +50,19 @@ packages_cran = c("DT", "tidyverse","dplyr", "tibble", "data.table", "stats", "g
 package.check <- lapply(packages_cran, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+# For oligo and ArrayExpress Fist install:
+#install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
+
+packages_bioconductor = c("Biobase","ArrayExpress", "hgu133plus2.db", "oligo", "DESeq2", "Glimma", "limma", "clusterProfiler", "topGO", "ComplexHeatmap")
+
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
     library(x, character.only = TRUE)
   }
 })
@@ -164,6 +166,43 @@ ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
                                   angle = 60, size = 6.5, hjust = 1 ,
                                   face = "bold"))
 rm(RLE_data, RLE_data_gathered, row_medians_assayData)
+```
+
+```{r}
+quantile_normalisation <- function(df){
+  df_rank <- apply(df,2,rank,ties.method="min")
+  df_sorted <- data.frame(apply(df, 2, sort))
+  df_mean <- apply(df_sorted, 1, mean)
+   
+  index_to_mean <- function(my_index, my_mean){
+    return(my_mean[my_index])
+  }
+   
+  df_final <- apply(df_rank, 2, index_to_mean, my_mean=df_mean)
+  rownames(df_final) <- rownames(df)
+  return(df_final)
+}
+
+row_medians_assayData <- 
+  Biobase::rowMedians(as.matrix(quantile_normalisation(exp.EGEOD18494)))
+
+RLE_data <- sweep(quantile_normalisation(exp.EGEOD18494), 1, row_medians_assayData)
+
+RLE_data <- as.data.frame(RLE_data)
+
+RLE_data_gathered <- 
+  tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
+
+ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
+                                       log2_expression_deviation)) + 
+  geom_boxplot(outlier.shape = NA) + 
+  ylim(c(-2, 2)) + 
+  theme(axis.text.x = element_text(colour = "aquamarine4", 
+                                  angle = 60, size = 6.5, hjust = 1 ,
+                                  face = "bold"))
+
+rm(RLE_data, RLE_data_gathered)
+
 ```
 
 
@@ -292,8 +331,13 @@ exp.EGEOD18494.hif <- data.frame(exp.EGEOD18494) %>%
   rownames_to_column('probes') %>% 
   filter(probes %in% hif.probes) %>% 
   merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
-  distinct(symbol, .keep_all = TRUE) %>%
-  select(!(probes)) 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) 
+
+# Saving data with GSM on columns
+exp.EGEOD18494.hif %>%  
+  write.csv(., file = "../data/exp.EGEOD18494.hif.GSM.csv", row.names = F)
+
 
 # Saving data with data description on columns
 exp.EGEOD18494.hif %>%  
@@ -302,9 +346,35 @@ exp.EGEOD18494.hif %>%
                     data.EGEOD18494$time,".", 
                     substr(data.EGEOD18494$cell_line,1,1), ".",
                     data.EGEOD18494$rep)) %>% 
-  write.csv(., file = "../data/exp.EGEOD18494.hif.csv", row.names = T)
+  write.csv(., file = "../data/exp.EGEOD18494.hif.csv", row.names = F)
 
+# Saving data with data description on columns
+breast1x <- 
+exp.EGEOD18494.hif %>%  
+  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
+                  data.EGEOD18494$rep == 1], "symbol"))  
+
+breast2x <- 
+exp.EGEOD18494.hif %>%  
+  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
+                  data.EGEOD18494$rep == 2], "symbol")) 
+
+breast3x <- 
+exp.EGEOD18494.hif %>%  
+  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
+                  data.EGEOD18494$rep == 3], "symbol")) 
+
+
+save.image("../data/pipeline_EGEOD18494.RData")
 ```    
+
+
+```{r}
+bin <- binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements
+bin <- data.frame(bin)
+bin$symbol <- breast1x$symbol
+bin = rbind(bin,c(1,0,0,0))
+```
 
 
 ```{r}

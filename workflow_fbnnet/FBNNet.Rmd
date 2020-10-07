@@ -5,62 +5,86 @@ author: "Leshi Chen"
 affiliation: Lincoln University, New Zealand
 date: "`r Sys.Date()`"
 url: https://www.frontiersin.org/articles/10.3389/fphys.2018.01328/full
-output:
-  rmarkdown::html_document:
-    citation_package: natbib
-    fig_caption: true
-#output: rmarkdown::pdf_document
-bibliography: master.bib
-header-includes:
-  -  \usepackage{hyperref}
-always_allow_html: true
-keywords: "Fundamental Boolean Modelling, FBNNet, FBN, FBM"
-geometry: margin=1in
-fontsize: 11pt
-spacing: double
-endnote: no
-graphics: yes
-abstract: "A Boolean model is a simple, discrete and dynamic model without the need to consider the effects at the intermediate levels and is powerful in qualitatively describing large-scale system dynamics. However, little effort has been made into constructing activation and inhibition networks, which could indicate the direct roles of a gene (or its synthesised protein) as an activator or inhibitor of a target gene. The major reason for this is that the hypotheses of the current Boolean models do not provide an intuitive way to identify the effects of individual activation or inhibition pathways on the target gene. Therefore, we propose to focus on the general Boolean functions at the subfunction level and further split the subfunctions into the activation and inhibition domains. As a consequence, we developed a novel data-driven Boolean model; namely, the Fundamental Boolean Model (FBM), to draw insights into gene activation and inhibition. This novel Boolean model provided an intuitive definition of activation and inhibition pathways and included mechanisms to handle protein decay issues as well as introducing uncertainty into the Boolean functions. Apart from this new concept, we also proposed a new data mining method to extract fundamental Boolean networks (FBNs) from time series data. To prove the concept of the novel model, we implemented a platform using R language, called FBNNet, based on the proposed novel Boolean model and a novel data mining technique. Our experimental results showed that the proposed FBM can explicitly display the internal connections between genes separated into the connection types of activation and inhibition, and the novel Boolean model was shown to infer GRNs from the time series data generated from an original cell cycle network with a high degree of accuracy. Moreover, the method we proposed to infer the gene regulatory networks for the novel Boolean model can be run in parallel and; hence, the computation cost is affordable. To summarise, the novel Boolean model and related FBNs could show significant trajectories in genes to reveal how genes regulated each other over a given time period. This new feature could facilitate further research about drug interactions to detect the side effects of the use of a newly-proposed drug. (source:https://www.frontiersin.org/articles/10.3389/fphys.2018.01328/full)"
-vignette: >
-  %\VignetteIndexEntry{P}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: 
+  pdf_document: default
+  html_document: 
+    default
+  github_document: 
+    df_print: paged
+    html_preview: FALSE
+    keep_html: TRUE
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })    
 ---
 
-```{r setup, include = FALSE}
- options(tinytex.verbose = TRUE)
- knitr::opts_chunk$set(
-   cache = FALSE,
-   message = FALSE,
-   warning = FALSE,
-   collapse = TRUE,
-   comment = "#>"
- )
- options(width = 150)
+
+
+```{r echo=FALSE, error=FALSE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
+## This chunk automatically generates a text .R version of this script when running within knitr.
+input  = knitr::current_input()  # filename of input document
+output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
+try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
+
+# Avoid duplicate label error of knitr::purl
+options(knitr.duplicate.label = 'allow')
+# Code to browse the markdown file with renderized images.
+knitr::opts_chunk$set(
+  fig.path = "figs/render_discrete-"
+)
+rm(input,output)
 ```
+
+
+# Installing and Loading Libraries            
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+packages_bioconductor = c("limma")
+
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed from Bioconductor and loaded
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+packages_cran = c("BoolNet","utils", "visNetwork", "FBNNet","tictoc")
+  
+#use this function to check if each package is on the local machine
+#if a package is installed, it will be loaded
+#if any are not, the missing package(s) will be installed from CRAN and loaded
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+#devtools::install_github("clsdavid/FBNNet2_public")
+#devtools::install_github("collectivemedia/tictoc")
+
+rm(package.check, packages_bioconductor, packages_cran)
+```
+
+
 ## Introduction
 Fundamental Boolean modelling(FBM) has been proposed to draw insights into gene activation, inhibition, and protein decay. This novel Boolean model provides an intuitive definition of activation and inhibition pathways and includes mechanisms to handle protein decay issues. To prove the concept of the novel model, we implemented a platform using R language, called FBNNet. Our experimental results show that the proposed FBM could explicitly display the internal
 connections of the mammalian cell cycle between genes separated into the connection
-types of activation, inhibition and protein decay [@fbnnet-2018].
+types of activation, inhibition and protein decay.
+
+https://clsdavid.github.io/FBNNet2_public/
+
 
 ## Experiment
-The experiments conducted and described here intend to prove the concept of the new Boolean Model, i.e., the FBM. To verify the results, we apply the general processes described in Figure 1 as a benchmark to compare the results generated via BoolNet [@boolnet-2010], with these consequencely reconstructed from the new R package, FBNNet.
+The experiments conducted and described here intend to prove the concept of the new Boolean Model, i.e., the FBM. To verify the results, we apply the general processes described in Figure 1 as a benchmark to compare the results generated via BoolNet, with these consequently reconstructed from the new R package, FBNNet.
+
+## Data
 
 ```{r, out.width = "100%"}
-knitr::include_graphics("IMAGES/evaluation.jpg")
-```
-```
-Figure 1 Evaluation assessment of Fundamental Boolean network inference using BoolNet. The blue arrows represent the processes using BoolNet and brown arrows represent the processes using our FBNNet R package. The green arrows represent the evaluation process. (A) We use the BoolNet script loadNetwork.R to load pre-defined networks from files and then generate the time series and networks; (B) We use the time series generated from BoolNet and the new R package, FBNNet, to generate FBNs; (C) We reconstruct the time series via the FBM; this process can be used to expand the short time series data; (D) To evaluate the FBM, we rebuild the BoolNet type network based on the reconstructed time series; and (E) We evaluate the FBN inference methods by comparing the generated time series and the generated BoolNet type of network with the original time series and network that were generated in step A.
-```
-## Data
-```{r, out.width = "100%"}
-library(knitr)
-library(BoolNet)
-library(utils)
-library(FBNNet)
-library(visNetwork)
-library(tictoc) # devtools::install_github("collectivemedia/tictoc")
-hif1a.net<-loadNetwork("cellcycle.txt")
+
+hif1a.net<-loadNetwork("boolean_network_HIFaxis.bn")
 hif1a.net
 ```
 
@@ -85,7 +109,7 @@ FBNcellcyclenetwork <- generateFBMNetwork(timeseries_data = trainingseries,
 toc()
 toc()
 
-   print(FBNcellcyclenetwork)
+print(FBNcellcyclenetwork)
 ```
 
 
