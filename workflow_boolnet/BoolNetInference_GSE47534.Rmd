@@ -1,5 +1,5 @@
 ---
-title: "BoolNet Inference  (GSE47533)"
+title: "BoolNet Inference (GSE47533)"
 output:
   pdf_document: default
   html_notebook: default
