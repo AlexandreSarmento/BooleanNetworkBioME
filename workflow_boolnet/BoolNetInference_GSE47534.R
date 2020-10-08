@@ -1,12 +1,12 @@
 #' ---
 #' title: "BoolNet Inference (GSE47533)"
 #' output:
-#'   pdf_document: default
-#'   html_notebook: default
 #'   github_document: 
 #'     df_print: paged
 #'     html_preview: FALSE
 #'     keep_html: TRUE
+#'   html_notebook: default
+#'   pdf_document: default
 #' ---
 #' 
 
