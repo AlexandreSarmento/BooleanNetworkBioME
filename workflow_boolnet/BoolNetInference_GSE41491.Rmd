@@ -1,5 +1,5 @@
 ---
-title: "BoolNet Inference  (GSE47533)"
+title: "BoolNet Inference  (GSE41491)"
 output:
   pdf_document: default
   html_notebook: default
@@ -22,20 +22,16 @@ knitr::opts_chunk$set(
 )
 ```
 
-Integrated analysis of microRNA and mRNA expression and association with HIF binding in MCF-7 cells under hypoxia (GSE47533)
+Hypoxia transcriptomic time-series data in three different cancer cell lines (GSE41491)
 
-Camps C, Saini HK, Mole DR, Choudhry H et al. Integrated analysis of microRNA and mRNA expression and association with HIF binding reveals the complexity of microRNA expression regulation under hypoxia. Mol Cancer 2014 Feb 11;13:28. PMID: 24517586
+Tumour hypoxia exhibits a highly dynamic spatial and temporal distribution and is associated with increased malignancy and poor prognosis.
+Assessment of time-dependent gene-expression changes in response to hypoxia may thus provide additional biological insights and help with patient prognosis.
 
-https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47533
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41491
 
-This SuperSeries is composed of the following SubSeries:
+Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
 
-GSE47532 	MCF-7 cells under hypoxia [miRNA] - GPL8227 Agilent-019118 Human miRNA Microarray 2.0 G4470B - Samples (11) - 822 miRNA
-
-GSE47533 	MCF-7 cells under hypoxia [mRNA] - GPL6884 Illumina HumanWG-6 v3.0 expression beadchip - Samples (12)
-
-GSE47602 	MCF-7 cells under hypoxia (miRNA-Seq) - GPL11154 Illumina HiSeq 2000 (Homo sapiens) - Samples (8) - Don't exist
-
+All analyses were performed in R (v2.11.1). Data processing was performed for each cell line separately using RMA (affy package, v1.26.1) for pre-processing, and updated Entrez GeneID annotation (hgu133plus2hsentrezgcdf package, v13.0.0).
 
 ```{r message=FALSE, warning=FALSE}
 packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff")
@@ -52,7 +48,7 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 # For oligo and ArrayExpress First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
 
-packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "hgu133plus2.db", "preprocessCore")
+packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "preprocessCore")
 
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
@@ -71,44 +67,34 @@ rm(package.check, packages_bioconductor, packages_cran)
 download_dir <- fs::path(".data_tmp")
 if (!dir_exists(download_dir)) { dir_create(download_dir) }  
 
-GSE47533 <-getGEO("GSE47533", destdir = download_dir, GSEMatrix = T)
+GSE41491 <-getGEO("GSE41491", destdir = download_dir, GSEMatrix = T)
 
-expr.GSE47533 <- exprs(GSE47533[[1]])
-prob.GSE47533 <- unique(rownames(expr.GSE47533))
-data.GSE47533 <- pData(GSE47533[[1]])
+expr.GSE41491 <- exprs(GSE41491[[1]])
+prob.GSE41491 <- unique(rownames(expr.GSE41491))
+data.GSE41491 <- pData(GSE41491[[1]])
 
-data.GSE47533 <- data.frame(
-                  codes = as.character(data.GSE47533$geo_accession),
-                  cell_line = "MCF7",
-                  time = data.GSE47533$`time of exposure:ch1`,
-                  condition = substr(as.character(data.GSE47533$description), 1, 4),
-                  rep = data.GSE47533$description.1)
-
-data.GSE47533 <- data.GSE47533 %>%
-  mutate(rep = recode(rep, "replicate 1" = 1,
-                           "replicate 2" = 2,
-                           "replicate 3" = 3)) 
-
-data.GSE47533$time <- as.character(data.GSE47533$time)
-data.GSE47533$time[data.GSE47533$condition == "Norm"] <- ''
-
+data.GSE41491 <- data.frame(
+                  codes = as.character(data.GSE41491$geo_accession),
+                  cell_line = substr(as.character(data.GSE41491$source_name_ch1),18,25),
+                  time = substr(as.character(data.GSE41491$characteristics_ch1.1),18,19),
+                  condition = substr(as.character(data.GSE41491$characteristics_ch1),12,13))
 
 # Convert the probes to Symbol names
-
+#Affymetrix Human Genome U133 Plus 2.0 Array [Brainarray Version 15.0.0, HGU133Plus2_Hs_ENTREZG]
 #  load/install the package
-if(!require("illuminaHumanv3.db")) BiocManager::install("illuminaHumanv3.db")
+if(!require("hgu133ahsentrezgcdf")) BiocManager::install("hgu133ahsentrezgcdf")
 
 # The below function call will return a datafram with probe_id, gene symbol
 # and ŕefgene_id for your data
 
-anno.GSE47533 <- AnnotationDbi::select(illuminaHumanv3.db, 
-       keys = prob.GSE47533, 
+anno.GSE41491 <- AnnotationDbi::select(hgu133ahsentrezgcdf, 
+       keys = prob.GSE41491, 
        columns=c("ENSEMBL", "SYMBOL", "GENENAME"), 
        keytype="PROBEID")
 
-colnames(anno.GSE47533) <- c("probes", "ensgene", "symbol", "description")
+colnames(anno.GSE41491) <- c("probes", "ensgene", "symbol", "description")
 
-rm(download_dir, GSE47533,  prob.GSE47533)
+rm(download_dir, GSE41491,  prob.GSE41491)
 
 ```
 
@@ -124,13 +110,13 @@ rm(download_dir, GSE47533,  prob.GSE47533)
 # Selected genes from HIF Axis
 hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
 
-hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols]
+hif.probes <- anno.GSE41491$probes[anno.GSE41491$symbol %in% hif.symbols]
 
 # Select the probes and genes
-expr.GSE47533.hif <- data.frame(expr.GSE47533) %>% 
+expr.GSE41491.hif <- data.frame(expr.GSE41491) %>% 
   rownames_to_column('probes') %>% 
   filter(probes %in% hif.probes) %>% 
-  merge(anno.GSE47533[anno.GSE47533$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
+  merge(anno.GSE41491[anno.GSE41491$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
   #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
   dplyr::select(!(probes)) %>% 
   arrange(symbol)
@@ -143,22 +129,23 @@ binNet <- function(b){
   aggregate(., list(symbol = b$symbol), mean) %>% 
   mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
-    rename_at(vars(data.GSE47533$codes[data.GSE47533$codes %in% names(b)]),
-            ~paste0(data.GSE47533$condition[data.GSE47533$codes %in% names(b)],".",
-                    data.GSE47533$time[data.GSE47533$codes %in% names(b)],".",
-                    data.GSE47533$rep[data.GSE47533$codes %in% names(b)])) %>% 
+    rename_at(vars(data.GSE41491$codes[data.GSE41491$codes %in% names(b)]),
+            ~paste0(data.GSE41491$condition[data.GSE41491$codes %in% names(b)],".",
+                    data.GSE41491$time[data.GSE41491$codes %in% names(b)],".",
+                    data.GSE41491$rep[data.GSE41491$codes %in% names(b)])) %>% 
   column_to_rownames("symbol")
 }
 
 
 ```
 
+Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
 
 ```{r}
 
 breast1_MCF7 <- 
-expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol")) %>% arrange(symbol)
+expr.GSE41491.hif %>% 
+  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 1], "symbol")) %>% arrange(symbol)
 
 names(breast1_MCF7) <- c("Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1", "symbol")
 
@@ -183,22 +170,22 @@ binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>
 ```{r}
 
 breast1_MCF7 <- 
-expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol"))  %>% 
+expr.GSE41491.hif %>% 
+  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 1], "symbol"))  %>% 
   binNet(.) 
 knitr::kable(breast1_MCF7)
 
 
 breast2_MCF7 <- 
-expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 2], "symbol"))  %>% 
+expr.GSE41491.hif %>% 
+  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 2], "symbol"))  %>% 
   binNet(.) 
 knitr::kable(breast2_MCF7)
 
 
 breast3_MCF7 <- 
-expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 3], "symbol"))  %>% 
+expr.GSE41491.hif %>% 
+  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 3], "symbol"))  %>% 
   binNet(.) 
 knitr::kable(breast3_MCF7)
 

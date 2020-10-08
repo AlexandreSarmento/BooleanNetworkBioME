@@ -136,17 +136,20 @@ exp.EGEOD18494.hif %>%
 
 names(breast1x) <- c("norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1", "symbol")
 
-breast1x[, c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")]
+breast1x[, c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")] %>% 
+  knitr::kable(.)
 
 binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
   as.data.frame(.)  %>% 
-  add_column(symbol = breast1x$symbol) %>%   dplyr::select( c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")) 
+  add_column(symbol = breast1x$symbol) %>%   dplyr::select( c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1"))  %>% 
+  knitr::kable(.)
   
 binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
   as.data.frame(.)  %>% 
   aggregate(., list(symbol = breast1x$symbol), mean) %>% 
   mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
-  rbind(., c("O2", 1,0,0,0))
+  rbind(., c("O2", 1,0,0,0)) %>% 
+  knitr::kable(.)
   
 
 #' 
@@ -159,21 +162,27 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
                   data.EGEOD18494$rep == 1], "symbol"))  %>% 
   binNet(.) 
-breast1x
+
+breast1x %>% 
+  knitr::kable(.)
 
 breast2x <- 
 exp.EGEOD18494.hif %>% 
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
                   data.EGEOD18494$rep == 2], "symbol"))  %>% 
   binNet(.) 
-breast2x
+
+breast2x  %>% 
+  knitr::kable(.)
 
 breast3x <- 
 exp.EGEOD18494.hif %>% 
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
                   data.EGEOD18494$rep == 3], "symbol"))  %>% 
   binNet(.) 
-breast3x
+
+breast3x %>% 
+  knitr::kable(.)
 
 # All breast cancer nets merged:
 
@@ -206,21 +215,27 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
                   data.EGEOD18494$rep == 1], "symbol"))  %>% 
   binNet(.) 
-hepatoma1x
+
+hepatoma1x %>% 
+  knitr::kable(.)
 
 hepatoma2x <- 
 exp.EGEOD18494.hif %>% 
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
                   data.EGEOD18494$rep == 2], "symbol"))  %>% 
   binNet(.) 
-hepatoma2x
+
+hepatoma2x %>% 
+  knitr::kable(.)
 
 hepatoma3x <- 
 exp.EGEOD18494.hif %>% 
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
                   data.EGEOD18494$rep == 3], "symbol"))  %>% 
   binNet(.) 
-hepatoma3x
+
+hepatoma3x %>% 
+  knitr::kable(.)
 
 # All nets hepatoma merged:
 
@@ -252,21 +267,27 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
                   data.EGEOD18494$rep == 1], "symbol"))  %>% 
   binNet(.) 
-glioma1x
+
+glioma1x %>% 
+  knitr::kable(.)
 
 glioma2x <- 
 exp.EGEOD18494.hif %>% 
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
                   data.EGEOD18494$rep == 2], "symbol"))  %>% 
   binNet(.) 
-glioma2x
+
+glioma2x %>% 
+  knitr::kable(.)
 
 glioma3x <- 
 exp.EGEOD18494.hif %>% 
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
                   data.EGEOD18494$rep == 3], "symbol"))  %>% 
   binNet(.) 
-glioma3x
+
+glioma3x %>% 
+  knitr::kable(.)
 
 # All glioma nets merged:
 
