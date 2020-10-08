@@ -18,7 +18,7 @@ try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
 options(knitr.duplicate.label = 'allow')
 # Code to browse the markdown file with renderized images.
 knitr::opts_chunk$set(
-  fig.path = "figs/render-"
+  fig.path = "figs/EGEOD18494-"
 )
 ```
 

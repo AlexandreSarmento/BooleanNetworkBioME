@@ -1,0 +1,215 @@
+#' ---
+#' title: "BoolNet Inference  (GSE47533)"
+#' output:
+#'   pdf_document: default
+#'   html_notebook: default
+#'   github_document: 
+#'     df_print: paged
+#'     html_preview: FALSE
+#'     keep_html: TRUE
+#' ---
+#' 
+
+#' 
+#' Integrated analysis of microRNA and mRNA expression and association with HIF binding in MCF-7 cells under hypoxia (GSE47533)
+#' 
+#' Camps C, Saini HK, Mole DR, Choudhry H et al. Integrated analysis of microRNA and mRNA expression and association with HIF binding reveals the complexity of microRNA expression regulation under hypoxia. Mol Cancer 2014 Feb 11;13:28. PMID: 24517586
+#' 
+#' https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47533
+#' 
+#' This SuperSeries is composed of the following SubSeries:
+#' 
+#' GSE47532 	MCF-7 cells under hypoxia [miRNA] - GPL8227 Agilent-019118 Human miRNA Microarray 2.0 G4470B - Samples (11) - 822 miRNA
+#' 
+#' GSE47533 	MCF-7 cells under hypoxia [mRNA] - GPL6884 Illumina HumanWG-6 v3.0 expression beadchip - Samples (12)
+#' 
+#' GSE47602 	MCF-7 cells under hypoxia (miRNA-Seq) - GPL11154 Illumina HiSeq 2000 (Homo sapiens) - Samples (8) - Don't exist
+#' 
+#' 
+## ----message=FALSE, warning=FALSE---------------------------------------------
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff")
+
+
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+# For oligo and ArrayExpress First install:
+#install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
+
+packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "hgu133plus2.db", "preprocessCore")
+
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+rm(package.check, packages_bioconductor, packages_cran)
+
+
+#' 
+## -----------------------------------------------------------------------------
+
+download_dir <- fs::path(".data_tmp")
+if (!dir_exists(download_dir)) { dir_create(download_dir) }  
+
+GSE47533 <-getGEO("GSE47533", destdir = download_dir, GSEMatrix = T)
+
+expr.GSE47533 <- exprs(GSE47533[[1]])
+prob.GSE47533 <- unique(rownames(expr.GSE47533))
+data.GSE47533 <- pData(GSE47533[[1]])
+
+data.GSE47533 <- data.frame(
+                  codes = as.character(data.GSE47533$geo_accession),
+                  cell_line = "MCF7",
+                  time = data.GSE47533$`time of exposure:ch1`,
+                  condition = substr(as.character(data.GSE47533$description), 1, 4),
+                  rep = data.GSE47533$description.1)
+
+data.GSE47533 <- data.GSE47533 %>%
+  mutate(rep = recode(rep, "replicate 1" = 1,
+                           "replicate 2" = 2,
+                           "replicate 3" = 3)) 
+
+data.GSE47533$time <- as.character(data.GSE47533$time)
+data.GSE47533$time[data.GSE47533$condition == "Norm"] <- ''
+
+
+# Convert the probes to Symbol names
+
+#  load/install the package
+if(!require("illuminaHumanv3.db")) BiocManager::install("illuminaHumanv3.db")
+
+# The below function call will return a datafram with probe_id, gene symbol
+# and ŕefgene_id for your data
+
+anno.GSE47533 <- AnnotationDbi::select(illuminaHumanv3.db, 
+       keys = prob.GSE47533, 
+       columns=c("ENSEMBL", "SYMBOL", "GENENAME"), 
+       keytype="PROBEID")
+
+colnames(anno.GSE47533) <- c("probes", "ensgene", "symbol", "description")
+
+rm(download_dir, GSE47533,  prob.GSE47533)
+
+
+#' 
+#' 
+#' # Selecting the HIF Genes 
+#'     
+## -----------------------------------------------------------------------------
+# Genes from Boolean Network:    
+# HIF1a, HIF2a, p53, BNIP3, VEGF, cMyc, Oct4, cdc20, cycA, cycB, cycE, cycD, p27, Rb, E2F, cdh1, mdm2, BAD, BclX
+
+# hif.symbols <- c("HIF1A", "HIF1", "PASD8", "MOP1", "EPAS1", "HIF2A", "HLF", "PASD2", "MOP2", "VEGFA", "VPF", "MVCD1", "VEGF-A", "TP53", "P53", "MYC", "C-Myc", "POU5F1", "OCT3", "OTF3", "CDC20", "P55CDC", "CDC20A", "CCNA1", "CCNA1", "CCNA2", "CCN1", "CCNA", "CCNB1", "CCNB", "CCNB1", "CCNB2", "CCNB2", "HsT17299", "CCND1", "PRAD1", "CCND2", "MPPH3", "CCNE1", "CCNE1", "CCNE", "PCCNE1", "CCNE2", "CCNE2", "CCNE", "PCCNE1", "CDKN1B", "KIP1", "P27KIP1", "CDKN4MEN4", "RB1", "PPP1R130", "Pp110", "E2F1", "RBAP-1", "BNIP3", "NIP3", "BCL2", "MCL1", "BCL2L3", "CDH1", "CD324", "UBE2C", "BAD", "BCL2L8", "VHL", "PVHL", "VHL1", "MDM2", "HDM2", "EP300", "P300", "KAT3B")
+
+# Selected genes from HIF Axis
+hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
+
+hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols]
+
+# Select the probes and genes
+expr.GSE47533.hif <- data.frame(expr.GSE47533) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% hif.probes) %>% 
+  merge(anno.GSE47533[anno.GSE47533$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) %>% 
+  arrange(symbol)
+  
+
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+binNet <- function(b){
+  binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  rbind(., c("O2", 1,0,0,0)) %>% 
+    rename_at(vars(data.GSE47533$codes[data.GSE47533$codes %in% names(b)]),
+            ~paste0(data.GSE47533$condition[data.GSE47533$codes %in% names(b)],".",
+                    data.GSE47533$time[data.GSE47533$codes %in% names(b)],".",
+                    data.GSE47533$rep[data.GSE47533$codes %in% names(b)])) %>% 
+  column_to_rownames("symbol")
+}
+
+
+
+#' 
+#' 
+## -----------------------------------------------------------------------------
+
+breast1_MCF7 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol")) %>% arrange(symbol)
+
+names(breast1_MCF7) <- c("Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1", "symbol")
+
+knitr::kable(breast1_MCF7[, c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1")])
+
+binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
+  add_column(symbol = breast1_MCF7$symbol) %>%   dplyr::select(c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1"))  %>% 
+  knitr::kable(.)
+  
+binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
+  aggregate(., list(symbol = breast1_MCF7$symbol), mean) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  rbind(., c("O2", 1,0,0,0)) %>% 
+  knitr::kable(.)
+  
+
+#' 
+#' # MDA-MB231 breast cancer
+#' 
+## -----------------------------------------------------------------------------
+
+breast1_MCF7 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol"))  %>% 
+  binNet(.) 
+knitr::kable(breast1_MCF7)
+
+
+breast2_MCF7 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 2], "symbol"))  %>% 
+  binNet(.) 
+knitr::kable(breast2_MCF7)
+
+
+breast3_MCF7 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 3], "symbol"))  %>% 
+  binNet(.) 
+knitr::kable(breast3_MCF7)
+
+# All breast cancer nets merged:
+
+net <- reconstructNetwork(list(breast1_MCF7, breast2_MCF7, breast3_MCF7), method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+# Individual nets of each replica:
+
+net <- reconstructNetwork(breast1_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+net <- reconstructNetwork(breast2_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+net <- reconstructNetwork(breast3_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+#' 
+#' 

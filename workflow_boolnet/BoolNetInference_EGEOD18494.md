@@ -183,46 +183,74 @@ exp.EGEOD18494.hif %>%
 
 names(breast1x) <- c("norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1", "symbol")
 
-breast1x[, c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")]
+breast1x[, c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")] %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":["symbol"],"name":[1],"type":["chr"],"align":["left"]},{"label":["norm.control.M.1"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["hypo.4h.M.1"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["hypo.8h.M.1"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["hypo.12h.M.1"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"EP300","2":"7.117723","3":"7.444650","4":"7.564863","5":"7.102371"},{"1":"EP300","2":"7.413672","3":"7.507501","4":"7.570583","5":"7.374402"},{"1":"HIF1A","2":"12.201881","3":"11.633014","4":"10.456373","5":"10.119609"},{"1":"MDM2","2":"5.524042","3":"5.320023","4":"5.350573","5":"5.446186"},{"1":"MDM2","2":"4.045154","3":"3.853332","4":"4.078569","5":"4.257243"},{"1":"MDM2","2":"5.078994","3":"4.927372","4":"5.029658","5":"4.981994"},{"1":"MDM2","2":"6.355831","3":"6.328876","4":"6.389927","5":"6.806724"},{"1":"MDM2","2":"4.287158","3":"4.755383","4":"4.670058","5":"4.462138"},{"1":"MDM2","2":"8.162994","3":"8.179121","4":"8.219938","5":"8.085525"},{"1":"MDM2","2":"7.285900","3":"7.207761","4":"7.123573","5":"6.955918"},{"1":"MDM2","2":"3.623543","3":"3.829355","4":"3.753720","5":"4.100483"},{"1":"MDM2","2":"4.054654","3":"4.129631","4":"4.067410","5":"4.256327"},{"1":"MDM2","2":"8.207312","3":"7.778604","4":"7.656600","5":"7.797764"},{"1":"TP53","2":"8.895355","3":"8.773830","4":"9.104009","5":"9.136858"},{"1":"TP53","2":"8.600345","3":"8.240598","4":"8.641253","5":"8.664151"},{"1":"VHL","2":"7.698038","3":"7.713089","4":"7.348580","5":"7.098092"},{"1":"VHL","2":"3.738962","3":"3.749649","4":"3.759698","5":"3.638137"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+| symbol | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
+| :----- | ---------------: | ----------: | ----------: | -----------: |
+| EP300  |         7.117723 |    7.444650 |    7.564863 |     7.102371 |
+| EP300  |         7.413672 |    7.507501 |    7.570583 |     7.374402 |
+| HIF1A  |        12.201881 |   11.633014 |   10.456373 |    10.119609 |
+| MDM2   |         5.524042 |    5.320023 |    5.350573 |     5.446186 |
+| MDM2   |         4.045154 |    3.853332 |    4.078569 |     4.257243 |
+| MDM2   |         5.078994 |    4.927372 |    5.029658 |     4.981994 |
+| MDM2   |         6.355831 |    6.328876 |    6.389927 |     6.806724 |
+| MDM2   |         4.287158 |    4.755383 |    4.670058 |     4.462138 |
+| MDM2   |         8.162994 |    8.179121 |    8.219938 |     8.085525 |
+| MDM2   |         7.285900 |    7.207761 |    7.123573 |     6.955918 |
+| MDM2   |         3.623543 |    3.829355 |    3.753720 |     4.100483 |
+| MDM2   |         4.054654 |    4.129631 |    4.067410 |     4.256327 |
+| MDM2   |         8.207312 |    7.778604 |    7.656600 |     7.797764 |
+| TP53   |         8.895355 |    8.773830 |    9.104009 |     9.136858 |
+| TP53   |         8.600345 |    8.240599 |    8.641253 |     8.664151 |
+| VHL    |         7.698038 |    7.713089 |    7.348580 |     7.098092 |
+| VHL    |         3.738962 |    3.749649 |    3.759698 |     3.638137 |
 
 ``` r
 binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
   as.data.frame(.)  %>% 
-  add_column(symbol = breast1x$symbol) %>%   dplyr::select( c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")) 
+  add_column(symbol = breast1x$symbol) %>%   dplyr::select( c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1"))  %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":["symbol"],"name":[1],"type":["chr"],"align":["left"]},{"label":["norm.control.M.1"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["hypo.4h.M.1"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["hypo.8h.M.1"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["hypo.12h.M.1"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"EP300","2":"0","3":"1","4":"1","5":"0"},{"1":"EP300","2":"0","3":"1","4":"1","5":"0"},{"1":"HIF1A","2":"1","3":"1","4":"0","5":"0"},{"1":"MDM2","2":"1","3":"0","4":"0","5":"1"},{"1":"MDM2","2":"1","3":"0","4":"1","5":"1"},{"1":"MDM2","2":"1","3":"0","4":"1","5":"0"},{"1":"MDM2","2":"0","3":"0","4":"0","5":"1"},{"1":"MDM2","2":"0","3":"1","4":"1","5":"0"},{"1":"MDM2","2":"1","3":"1","4":"1","5":"0"},{"1":"MDM2","2":"1","3":"1","4":"1","5":"0"},{"1":"MDM2","2":"0","3":"0","4":"0","5":"1"},{"1":"MDM2","2":"0","3":"0","4":"0","5":"1"},{"1":"MDM2","2":"1","3":"0","4":"0","5":"0"},{"1":"TP53","2":"0","3":"0","4":"1","5":"1"},{"1":"TP53","2":"1","3":"0","4":"1","5":"1"},{"1":"VHL","2":"1","3":"1","4":"0","5":"0"},{"1":"VHL","2":"1","3":"1","4":"1","5":"0"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+| symbol | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
+| :----- | ---------------: | ----------: | ----------: | -----------: |
+| EP300  |                0 |           1 |           1 |            0 |
+| EP300  |                0 |           1 |           1 |            0 |
+| HIF1A  |                1 |           1 |           0 |            0 |
+| MDM2   |                1 |           0 |           0 |            1 |
+| MDM2   |                1 |           0 |           1 |            1 |
+| MDM2   |                1 |           0 |           1 |            0 |
+| MDM2   |                0 |           0 |           0 |            1 |
+| MDM2   |                0 |           1 |           1 |            0 |
+| MDM2   |                1 |           1 |           1 |            0 |
+| MDM2   |                1 |           1 |           1 |            0 |
+| MDM2   |                0 |           0 |           0 |            1 |
+| MDM2   |                0 |           0 |           0 |            1 |
+| MDM2   |                1 |           0 |           0 |            0 |
+| TP53   |                0 |           0 |           1 |            1 |
+| TP53   |                1 |           0 |           1 |            1 |
+| VHL    |                1 |           1 |           0 |            0 |
+| VHL    |                1 |           1 |           1 |            0 |
 
 ``` r
 binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
   as.data.frame(.)  %>% 
   aggregate(., list(symbol = breast1x$symbol), mean) %>% 
   mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
-  rbind(., c("O2", 1,0,0,0))
+  rbind(., c("O2", 1,0,0,0)) %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":["symbol"],"name":[1],"type":["chr"],"align":["left"]},{"label":["norm.control.M.1"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.4h.M.1"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.8h.M.1"],"name":[4],"type":["chr"],"align":["left"]},{"label":["hypo.12h.M.1"],"name":[5],"type":["chr"],"align":["left"]}],"data":[{"1":"EP300","2":"0","3":"1","4":"1","5":"0"},{"1":"HIF1A","2":"1","3":"1","4":"0","5":"0"},{"1":"MDM2","2":"1","3":"0","4":"1","5":"1"},{"1":"TP53","2":"1","3":"0","4":"1","5":"1"},{"1":"VHL","2":"1","3":"1","4":"1","5":"0"},{"1":"O2","2":"1","3":"0","4":"0","5":"0"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+| symbol | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
+| :----- | :--------------- | :---------- | :---------- | :----------- |
+| EP300  | 0                | 1           | 1           | 0            |
+| HIF1A  | 1                | 1           | 0           | 0            |
+| MDM2   | 1                | 0           | 1           | 1            |
+| TP53   | 1                | 0           | 1           | 1            |
+| VHL    | 1                | 1           | 1           | 0            |
+| O2     | 1                | 0           | 0           | 0            |
 
 # MDA-MB231 breast cancer
 
@@ -232,16 +260,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
                   data.EGEOD18494$rep == 1], "symbol"))  %>% 
   binNet(.) 
-breast1x
+
+breast1x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.M.1"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.M.1"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.M.1"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.M.1"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"0","2":"1","3":"1","4":"0","_rn_":"EP300"},{"1":"1","2":"1","3":"0","4":"0","_rn_":"HIF1A"},{"1":"1","2":"0","3":"1","4":"1","_rn_":"MDM2"},{"1":"1","2":"0","3":"1","4":"1","_rn_":"TP53"},{"1":"1","2":"1","3":"1","4":"0","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 0                | 1           | 1           | 0            |
+| HIF1A | 1                | 1           | 0           | 0            |
+| MDM2  | 1                | 0           | 1           | 1            |
+| TP53  | 1                | 0           | 1           | 1            |
+| VHL   | 1                | 1           | 1           | 0            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 breast2x <- 
@@ -249,16 +280,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
                   data.EGEOD18494$rep == 2], "symbol"))  %>% 
   binNet(.) 
-breast2x
+
+breast2x  %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.M.2"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.M.2"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.M.2"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.M.2"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"1","2":"0","3":"1","4":"1","_rn_":"EP300"},{"1":"1","2":"1","3":"0","4":"0","_rn_":"HIF1A"},{"1":"1","2":"0","3":"1","4":"0","_rn_":"MDM2"},{"1":"0","2":"1","3":"1","4":"1","_rn_":"TP53"},{"1":"1","2":"1","3":"1","4":"0","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.M.2 | hypo.4h.M.2 | hypo.8h.M.2 | hypo.12h.M.2 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 1                | 0           | 1           | 1            |
+| HIF1A | 1                | 1           | 0           | 0            |
+| MDM2  | 1                | 0           | 1           | 0            |
+| TP53  | 0                | 1           | 1           | 1            |
+| VHL   | 1                | 1           | 1           | 0            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 breast3x <- 
@@ -266,16 +300,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
                   data.EGEOD18494$rep == 3], "symbol"))  %>% 
   binNet(.) 
-breast3x
+
+breast3x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.M.3"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.M.3"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.M.3"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.M.3"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"0","2":"1","3":"1","4":"1","_rn_":"EP300"},{"1":"1","2":"1","3":"0","4":"0","_rn_":"HIF1A"},{"1":"1","2":"1","3":"0","4":"1","_rn_":"MDM2"},{"1":"0","2":"1","3":"1","4":"1","_rn_":"TP53"},{"1":"1","2":"1","3":"0","4":"1","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.M.3 | hypo.4h.M.3 | hypo.8h.M.3 | hypo.12h.M.3 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 0                | 1           | 1           | 1            |
+| HIF1A | 1                | 1           | 0           | 0            |
+| MDM2  | 1                | 1           | 0           | 1            |
+| TP53  | 0                | 1           | 1           | 1            |
+| VHL   | 1                | 1           | 0           | 1            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 # All breast cancer nets merged:
@@ -284,7 +321,7 @@ net <- reconstructNetwork(list(breast1x, breast2x, breast3x), method="bestfit",r
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-7-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
 print(net)
@@ -327,7 +364,7 @@ net <- reconstructNetwork(breast1x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-7-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-7-2.png)<!-- -->
 
 ``` r
 print(net)
@@ -369,7 +406,7 @@ net <- reconstructNetwork(breast2x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-7-3.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-7-3.png)<!-- -->
 
 ``` r
 print(net)
@@ -412,7 +449,7 @@ net <- reconstructNetwork(breast3x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-7-4.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-7-4.png)<!-- -->
 
 ``` r
 print(net)
@@ -492,16 +529,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
                   data.EGEOD18494$rep == 1], "symbol"))  %>% 
   binNet(.) 
-hepatoma1x
+
+hepatoma1x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.H.1"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.H.1"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.H.1"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.H.1"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"1","2":"1","3":"0","4":"0","_rn_":"EP300"},{"1":"0","2":"0","3":"1","4":"0","_rn_":"HIF1A"},{"1":"1","2":"1","3":"0","4":"1","_rn_":"MDM2"},{"1":"1","2":"1","3":"0","4":"1","_rn_":"TP53"},{"1":"1","2":"0","3":"1","4":"0","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.H.1 | hypo.4h.H.1 | hypo.8h.H.1 | hypo.12h.H.1 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 1                | 1           | 0           | 0            |
+| HIF1A | 0                | 0           | 1           | 0            |
+| MDM2  | 1                | 1           | 0           | 1            |
+| TP53  | 1                | 1           | 0           | 1            |
+| VHL   | 1                | 0           | 1           | 0            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 hepatoma2x <- 
@@ -509,16 +549,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
                   data.EGEOD18494$rep == 2], "symbol"))  %>% 
   binNet(.) 
-hepatoma2x
+
+hepatoma2x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.H.2"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.H.2"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.H.2"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.H.2"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"0","2":"1","3":"1","4":"1","_rn_":"EP300"},{"1":"0","2":"0","3":"1","4":"0","_rn_":"HIF1A"},{"1":"0","2":"1","3":"1","4":"1","_rn_":"MDM2"},{"1":"0","2":"1","3":"1","4":"0","_rn_":"TP53"},{"1":"1","2":"0","3":"1","4":"1","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.H.2 | hypo.4h.H.2 | hypo.8h.H.2 | hypo.12h.H.2 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 0                | 1           | 1           | 1            |
+| HIF1A | 0                | 0           | 1           | 0            |
+| MDM2  | 0                | 1           | 1           | 1            |
+| TP53  | 0                | 1           | 1           | 0            |
+| VHL   | 1                | 0           | 1           | 1            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 hepatoma3x <- 
@@ -526,16 +569,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
                   data.EGEOD18494$rep == 3], "symbol"))  %>% 
   binNet(.) 
-hepatoma3x
+
+hepatoma3x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.H.3"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.H.3"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.H.3"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.H.3"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"1","2":"1","3":"0","4":"1","_rn_":"EP300"},{"1":"0","2":"1","3":"1","4":"0","_rn_":"HIF1A"},{"1":"0","2":"1","3":"0","4":"1","_rn_":"MDM2"},{"1":"1","2":"1","3":"1","4":"1","_rn_":"TP53"},{"1":"1","2":"1","3":"0","4":"0","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.H.3 | hypo.4h.H.3 | hypo.8h.H.3 | hypo.12h.H.3 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 1                | 1           | 0           | 1            |
+| HIF1A | 0                | 1           | 1           | 0            |
+| MDM2  | 0                | 1           | 0           | 1            |
+| TP53  | 1                | 1           | 1           | 1            |
+| VHL   | 1                | 1           | 0           | 0            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 # All nets hepatoma merged:
@@ -544,7 +590,7 @@ net <- reconstructNetwork(list(hepatoma1x, hepatoma2x, hepatoma3x), method="best
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-8-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 print(net)
@@ -646,7 +692,7 @@ net <- reconstructNetwork(hepatoma1x, method="bestfit",returnPBN=TRUE,readableFu
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-8-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-2.png)<!-- -->
 
 ``` r
 print(net)
@@ -685,7 +731,7 @@ net <- reconstructNetwork(hepatoma2x, method="bestfit",returnPBN=TRUE,readableFu
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-8-3.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-3.png)<!-- -->
 
 ``` r
 print(net)
@@ -729,7 +775,7 @@ net <- reconstructNetwork(hepatoma3x, method="bestfit",returnPBN=TRUE,readableFu
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-8-4.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-4.png)<!-- -->
 
 ``` r
 print(net)
@@ -774,16 +820,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
                   data.EGEOD18494$rep == 1], "symbol"))  %>% 
   binNet(.) 
-glioma1x
+
+glioma1x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.U.1"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.U.1"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.U.1"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.U.1"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"1","2":"0","3":"0","4":"1","_rn_":"EP300"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"HIF1A"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"MDM2"},{"1":"1","2":"0","3":"1","4":"1","_rn_":"TP53"},{"1":"1","2":"1","3":"0","4":"1","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.U.1 | hypo.4h.U.1 | hypo.8h.U.1 | hypo.12h.U.1 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 1                | 0           | 0           | 1            |
+| HIF1A | 1                | 0           | 0           | 0            |
+| MDM2  | 1                | 0           | 0           | 0            |
+| TP53  | 1                | 0           | 1           | 1            |
+| VHL   | 1                | 1           | 0           | 1            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 glioma2x <- 
@@ -791,16 +840,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
                   data.EGEOD18494$rep == 2], "symbol"))  %>% 
   binNet(.) 
-glioma2x
+
+glioma2x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.U.2"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.U.2"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.U.2"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.U.2"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"1","2":"0","3":"1","4":"0","_rn_":"EP300"},{"1":"1","2":"1","3":"0","4":"0","_rn_":"HIF1A"},{"1":"0","2":"0","3":"0","4":"1","_rn_":"MDM2"},{"1":"1","2":"0","3":"1","4":"0","_rn_":"TP53"},{"1":"0","2":"1","3":"1","4":"0","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.U.2 | hypo.4h.U.2 | hypo.8h.U.2 | hypo.12h.U.2 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 1                | 0           | 1           | 0            |
+| HIF1A | 1                | 1           | 0           | 0            |
+| MDM2  | 0                | 0           | 0           | 1            |
+| TP53  | 1                | 0           | 1           | 0            |
+| VHL   | 0                | 1           | 1           | 0            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 glioma3x <- 
@@ -808,16 +860,19 @@ exp.EGEOD18494.hif %>%
   dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
                   data.EGEOD18494$rep == 3], "symbol"))  %>% 
   binNet(.) 
-glioma3x
+
+glioma3x %>% 
+  knitr::kable(.)
 ```
 
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["norm.control.U.3"],"name":[1],"type":["chr"],"align":["left"]},{"label":["hypo.4h.U.3"],"name":[2],"type":["chr"],"align":["left"]},{"label":["hypo.8h.U.3"],"name":[3],"type":["chr"],"align":["left"]},{"label":["hypo.12h.U.3"],"name":[4],"type":["chr"],"align":["left"]}],"data":[{"1":"1","2":"1","3":"1","4":"0","_rn_":"EP300"},{"1":"1","2":"1","3":"0","4":"0","_rn_":"HIF1A"},{"1":"1","2":"1","3":"1","4":"0","_rn_":"MDM2"},{"1":"1","2":"1","3":"1","4":"1","_rn_":"TP53"},{"1":"1","2":"0","3":"1","4":"1","_rn_":"VHL"},{"1":"1","2":"0","3":"0","4":"0","_rn_":"O2"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
+|       | norm.control.U.3 | hypo.4h.U.3 | hypo.8h.U.3 | hypo.12h.U.3 |
+| :---- | :--------------- | :---------- | :---------- | :----------- |
+| EP300 | 1                | 1           | 1           | 0            |
+| HIF1A | 1                | 1           | 0           | 0            |
+| MDM2  | 1                | 1           | 1           | 0            |
+| TP53  | 1                | 1           | 1           | 1            |
+| VHL   | 1                | 0           | 1           | 1            |
+| O2    | 1                | 0           | 0           | 0            |
 
 ``` r
 # All glioma nets merged:
@@ -826,7 +881,7 @@ net <- reconstructNetwork(list(glioma1x, glioma2x, glioma3x), method="bestfit",r
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-9-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 print(net)
@@ -897,7 +952,7 @@ net <- reconstructNetwork(glioma1x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-9-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-2.png)<!-- -->
 
 ``` r
 print(net)
@@ -941,7 +996,7 @@ net <- reconstructNetwork(glioma2x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-9-3.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-3.png)<!-- -->
 
 ``` r
 print(net)
@@ -983,7 +1038,7 @@ net <- reconstructNetwork(glioma3x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/render-unnamed-chunk-9-4.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-4.png)<!-- -->
 
 ``` r
 print(net)

@@ -18,7 +18,7 @@ try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
 options(knitr.duplicate.label = 'allow')
 # Code to browse the markdown file with renderized images.
 knitr::opts_chunk$set(
-  fig.path = "figs/render-"
+  fig.path = "figs/GSE41491-"
 )
 ```
 
@@ -82,14 +82,19 @@ data.GSE41491 <- data.frame(
 # Convert the probes to Symbol names
 #Affymetrix Human Genome U133 Plus 2.0 Array [Brainarray Version 15.0.0, HGU133Plus2_Hs_ENTREZG]
 #  load/install the package
-if(!require("hgu133ahsentrezgcdf")) BiocManager::install("hgu133ahsentrezgcdf")
+if(!require("hgu133plus2.db")) BiocManager::install("hgu133plus2.db")
 
 # The below function call will return a datafram with probe_id, gene symbol
 # and ŕefgene_id for your data
 
-anno.GSE41491 <- AnnotationDbi::select(hgu133ahsentrezgcdf, 
+library(readr)
+GPL14877 <- read_delim("workflow_boolnet/.data_tmp/GPL14877.soft", 
+    "\t", escape_double = FALSE, trim_ws = TRUE, 
+    skip = 393)
+
+anno.GSE41491 <- AnnotationDbi::select(hgu133plus2.db, 
        keys = prob.GSE41491, 
-       columns=c("ENSEMBL", "SYMBOL", "GENENAME"), 
+       columns=c("ENTREZID", "ENSEMBL", "SYMBOL", "GENENAME"), 
        keytype="PROBEID")
 
 colnames(anno.GSE41491) <- c("probes", "ensgene", "symbol", "description")
