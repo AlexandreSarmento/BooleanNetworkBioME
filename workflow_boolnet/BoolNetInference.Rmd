@@ -5,18 +5,18 @@ output:
   github_document: 
     df_print: paged
     html_preview: FALSE
-    keep_html: TRUE
+    keep_html: FALSE
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })    
 ---
 ```{r error=TRUE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
 ## This chunk automatically generates a text .R version of this script when running within knitr.
-input  = knitr::current_input()  # filename of input document
-output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
-try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
-# Avoid duplicate label error of knitr::purl
+# input  = knitr::current_input()  # filename of input document
+# output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
+# try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
+## Avoid duplicate label error of knitr::purl
 options(knitr.duplicate.label = 'allow')
-# Code to browse the markdown file with renderized images.
+## Code to browse the markdown file with renderized images.
 knitr::opts_chunk$set(
   fig.path = "figs/BoolNetInfer-"
 )
@@ -294,7 +294,7 @@ all.p <- plotNetworkWiring(all.nets, plotIt=F)
 
 # Network inference:
 
-```{r fig.width=10}
+```{r }
 
 # MDA-MB231 breast cancer - 4 time-points
 par(mfrow = c(1,3))
@@ -323,6 +323,17 @@ plot(breast_MCF7.p, vertex.label.color="#440154ff",  vertex.color="lightblue", v
 par(mfrow = c(1,1))
 plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
      main="All breast cell-lines")
+```
+
+```{r}
+HIFaxis.net <- loadNetwork("reduced_HIFaxis.bn")
+HIFaxis.p <- plotNetworkWiring(HIFaxis.net, plotIt=F)
+HIFaxis.net
+```
+
+```{r}
+plot(HIFaxis.p, vertex.label.color="#440154ff",  vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="HIF axis Network\n Theoretical")
 ```
 
 

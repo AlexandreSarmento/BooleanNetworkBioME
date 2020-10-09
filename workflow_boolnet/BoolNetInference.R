@@ -314,4 +314,15 @@ plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.fra
      main="All breast cell-lines")
 
 #' 
+## -----------------------------------------------------------------------------
+HIFaxis.net <- loadNetwork("boolean_network_HIFaxis.bn")
+HIFaxis.p <- plotNetworkWiring(HIFaxis.net, plotIt=F)
+HIFaxis.net
+
+#' 
+## -----------------------------------------------------------------------------
+plot(HIFaxis.p, vertex.label.color="#440154ff",  vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="HIF axis Network\n Theoretical")
+
+#' 
 #' 

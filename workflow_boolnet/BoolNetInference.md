@@ -72,3 +72,32 @@ plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.fra
 ```
 
 ![](figs/BoolNetInfer-unnamed-chunk-13-4.png)<!-- -->
+
+``` r
+HIFaxis.net <- loadNetwork("boolean_network_HIFaxis.bn")
+HIFaxis.p <- plotNetworkWiring(HIFaxis.net, plotIt=F)
+HIFaxis.net
+```
+
+    ## Boolean network with 6 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL O2
+    ## 
+    ## Transition functions:
+    ## EP300 = (!VHL & TP53) | (VHL & !TP53)
+    ## HIF1A = !VHL & ((!O2 & EP300 & !TP53) | (!O2 & !MDM2))
+    ## MDM2 = TP53 & !VHL
+    ## TP53 = !MDM2 | (!O2 & EP300 & VHL)
+    ## VHL = HIF1A & !TP53
+    ## O2 = 0
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## O2 = 0
+
+``` r
+plot(HIFaxis.p, vertex.label.color="#440154ff",  vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="HIF axis Network\n Theoretical")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-15-1.png)<!-- -->
