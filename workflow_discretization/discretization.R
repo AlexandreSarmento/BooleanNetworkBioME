@@ -32,7 +32,7 @@ package.check <- lapply(packages_bioconductor, FUN = function(x) {
   }
 })
 
-packages_cran = c("tidyverse","BiTrinA")
+packages_cran = c("tidyverse", "BiTrinA")
   
 #use this function to check if each package is on the local machine
 #if a package is installed, it will be loaded
@@ -48,9 +48,9 @@ rm(package.check, packages_bioconductor, packages_cran)
 
 #' 
 ## -----------------------------------------------------------------------------
-setwd(".")
-load("pipeline_EGEOD18494.RData")
-load("pipeline_GSE142867.RData")
+
+load("..data/pipeline_EGEOD18494.RData")
+load("..data/pipeline_GSE142867.RData")
 
 #' 
 #' 
@@ -76,6 +76,7 @@ load("pipeline_GSE142867.RData")
 #' 
 #' - *Estimate location and variation of the strongest discontinuities*: Based on these estimates, data values can be excluded from further analyses.    
 #'     
+#'   
 ## -----------------------------------------------------------------------------
 
 # Correcting an outlier on HIF1A:
@@ -144,7 +145,8 @@ exp.GSE142867.hif.bin <- data.frame(exp.GSE142867.hif.bin %>%
      group_by(Symbol) %>%
      slice(which.min(p.value)))
 
-head(exp.GSE142867.hif.bin)
+head(exp.GSE142867.hif.bin) %>% 
+  knitr::kable(.)
 
 #' 
 ## -----------------------------------------------------------------------------
@@ -155,7 +157,8 @@ exp.GSE142867.hif.mean <- exp.GSE142867.hif.bin %>%
         hypo.d10 = rowMeans(dplyr::select(., starts_with("hypo.d10"))))  %>%
   dplyr::select(., -ends_with(c(".",".1",".2")))
 
-exp.GSE142867.hif.mean
+exp.GSE142867.hif.mean %>% 
+  knitr::kable(.)
 
 #' 
 #' 
@@ -169,7 +172,8 @@ exp.GSE142867.hif.pivot$codes <- factor(exp.GSE142867.hif.pivot$codes,  levels =
 
 exp.GSE142867.hif.pivot$time <- as.numeric(exp.GSE142867.hif.pivot$codes)
 
-head(exp.GSE142867.hif.pivot)
+head(exp.GSE142867.hif.pivot) %>% 
+  knitr::kable(.)
 
 
 #'    
@@ -181,6 +185,30 @@ ggplot(aes(x = factor(time), y = value, group = Symbol, color="red"),
   geom_line() + 
   scale_x_discrete(breaks = c(1, 2, 3, 4), 
                  labels = c("Normoxia", "Hypoxia: Day 3" , "Hypoxia: Day 7" , "Hypoxia: Day10")) +
+  xlab("Conditions") + ylab("Gene Expression") +
+  theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=.8, hjust=0.8)) +
+  #geom_line(aes(linetype=Symbol, color=Symbol)) +
+  facet_wrap(~ Symbol) 
+
+ggplot(aes(x = factor(time), y = value, group = Symbol, color="red"),  
+           data = exp.EGEOD18494.hif.mean.pivot[exp.EGEOD18494.hif.mean.pivot$Symbol %in% c("HIF1A", "EPAS1", "TP53", "CCND1", "MYC", "BAD"),]) +
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(breaks = c(1, 2, 3, 4), 
+                 labels = c("Normoxia", "Hypoxia: 4h" , "Hypoxia: 8h" , "Hypoxia: 12h")) +
+  xlab("Conditions") + ylab("Gene Expression") +
+  theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=.8, hjust=0.8)) +
+  #geom_line(aes(linetype=Symbol, color=Symbol)) +
+  facet_wrap(~ Symbol) 
+
+#'    
+## -----------------------------------------------------------------------------
+ggplot(aes(x = factor(time), y = value, group = Symbol, color="red"),  
+           data = exp.EGEOD18494.hif.mean.pivot[exp.EGEOD18494.hif.mean.pivot$Symbol %in% c("HIF1A", "EPAS1", "TP53", "CCND1", "MYC", "BAD"),]) +
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(breaks = c(1, 2, 3, 4), 
+                 labels = c("Normoxia", "Hypoxia: 4h" , "Hypoxia: 8h" , "Hypoxia: 12h")) +
   xlab("Conditions") + ylab("Gene Expression") +
   theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=.8, hjust=0.8)) +
   #geom_line(aes(linetype=Symbol, color=Symbol)) +
@@ -251,7 +279,8 @@ exp.EGEOD18494.hif.bin <- data.frame(exp.EGEOD18494.hif.bin %>%
      group_by(Symbol) %>%
      slice(which.min(p.value)))
 
-head(exp.EGEOD18494.hif.bin)
+head(exp.EGEOD18494.hif.bin)%>% 
+  knitr::kable(.)
 
 
 #' 
@@ -265,7 +294,8 @@ exp.EGEOD18494.hif.mean <- exp.EGEOD18494.hif.bin %>%
         hypo.12h = rowMeans(dplyr::select(., starts_with("hypo.12"))))  %>%
   dplyr::select(., -ends_with(c("1","2","3")))
 
-exp.EGEOD18494.hif.mean
+exp.EGEOD18494.hif.mean %>% 
+  knitr::kable(.)
 
 #' 
 #' 
@@ -279,7 +309,8 @@ exp.EGEOD18494.hif.mean.pivot$codes <- factor(exp.EGEOD18494.hif.mean.pivot$code
 
 exp.EGEOD18494.hif.mean.pivot$time <- as.numeric(exp.EGEOD18494.hif.mean.pivot$codes)
 
-head(exp.EGEOD18494.hif.mean.pivot)
+head(exp.EGEOD18494.hif.mean.pivot) %>% 
+  knitr::kable(.)
 
 
 #'    

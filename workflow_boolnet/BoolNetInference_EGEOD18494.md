@@ -18,7 +18,7 @@ image scanning.
 <https://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-18494/>
 
 ``` r
-packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff", "RSQLite")
 
 
 # Install and load packages
@@ -29,12 +29,10 @@ package.check <- lapply(packages_cran, FUN = function(x) {
   }
 })
 
-library(RSQLite, lib.loc = "/usr/local/lib/R/site-library")
-
-# For oligo and ArrayExpress First install:
+# For oligo First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
 
-packages_bioconductor = c("Biobase", "GEOquery", "ArrayExpress", "hgu133plus2.db", "preprocessCore")
+packages_bioconductor = c("Biobase", "GEOquery", "ArrayExpress", "hgu133plus2.db")
 
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
@@ -55,46 +53,7 @@ if (!dir_exists(download_dir)) {
 } else {
     EGEOD18494 <- ArrayExpress( "E-GEOD-18494", save=TRUE, path=download_dir)
 }
-```
 
-    ## Reading in : .data_tmp/GSM460679.CEL
-    ## Reading in : .data_tmp/GSM460699.CEL
-    ## Reading in : .data_tmp/GSM460681.CEL
-    ## Reading in : .data_tmp/GSM460685.CEL
-    ## Reading in : .data_tmp/GSM460700.CEL
-    ## Reading in : .data_tmp/GSM460675.CEL
-    ## Reading in : .data_tmp/GSM460695.CEL
-    ## Reading in : .data_tmp/GSM460686.CEL
-    ## Reading in : .data_tmp/GSM460677.CEL
-    ## Reading in : .data_tmp/GSM460698.CEL
-    ## Reading in : .data_tmp/GSM460678.CEL
-    ## Reading in : .data_tmp/GSM460696.CEL
-    ## Reading in : .data_tmp/GSM460697.CEL
-    ## Reading in : .data_tmp/GSM460693.CEL
-    ## Reading in : .data_tmp/GSM460692.CEL
-    ## Reading in : .data_tmp/GSM460683.CEL
-    ## Reading in : .data_tmp/GSM460676.CEL
-    ## Reading in : .data_tmp/GSM460673.CEL
-    ## Reading in : .data_tmp/GSM460690.CEL
-    ## Reading in : .data_tmp/GSM460684.CEL
-    ## Reading in : .data_tmp/GSM460688.CEL
-    ## Reading in : .data_tmp/GSM460687.CEL
-    ## Reading in : .data_tmp/GSM460669.CEL
-    ## Reading in : .data_tmp/GSM460682.CEL
-    ## Reading in : .data_tmp/GSM460671.CEL
-    ## Reading in : .data_tmp/GSM460702.CEL
-    ## Reading in : .data_tmp/GSM460701.CEL
-    ## Reading in : .data_tmp/GSM460674.CEL
-    ## Reading in : .data_tmp/GSM460691.CEL
-    ## Reading in : .data_tmp/GSM460704.CEL
-    ## Reading in : .data_tmp/GSM460680.CEL
-    ## Reading in : .data_tmp/GSM460670.CEL
-    ## Reading in : .data_tmp/GSM460694.CEL
-    ## Reading in : .data_tmp/GSM460672.CEL
-    ## Reading in : .data_tmp/GSM460703.CEL
-    ## Reading in : .data_tmp/GSM460689.CEL
-
-``` r
 data.EGEOD18494 <- Biobase::pData(EGEOD18494)
 
 data.EGEOD18494 <- data.frame(
@@ -108,30 +67,21 @@ data.EGEOD18494$rep <- rep(1:3, n= length(data.EGEOD18494$codes))
 
 # Normalisation
 eset.EGEOD18494 <- oligo::rma(EGEOD18494,  normalize = TRUE)
-```
 
-    ## Background correcting
-    ## Normalizing
-    ## Calculating Expression
+expr.EGEOD18494 <- exprs(eset.EGEOD18494)
 
-``` r
-exp.EGEOD18494 <- exprs(eset.EGEOD18494)
+# Convert to a data.frame
+expr.EGEOD18494 <- as.data.frame(as.ffdf(expr.EGEOD18494))
 
-colnames(exp.EGEOD18494) <- substr(colnames(exp.EGEOD18494),1,9)
+colnames(expr.EGEOD18494) <- substr(colnames(expr.EGEOD18494),1,9)
 
-EGEOD18494@annotation
-```
-
-    ## [1] "pd.hg.u133.plus.2"
-
-``` r
-rm(download_dir)
+rm(download_dir, EGEOD18494, eset.EGEOD18494)
 ```
 
 # Convert the probes to Symbol names
 
 ``` r
-anno.EGEOD18494 <- AnnotationDbi::select(hgu133plus2.db, keys=rownames(exp.EGEOD18494), columns=c("ENSEMBL", "SYMBOL", "GENENAME"), keytype="PROBEID")
+anno.EGEOD18494 <- AnnotationDbi::select(hgu133plus2.db, keys=rownames(expr.EGEOD18494), columns=c("ENSEMBL", "SYMBOL", "GENENAME"), keytype="PROBEID")
 ```
 
     ## 'select()' returned 1:many mapping between keys and columns
@@ -149,170 +99,181 @@ hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
 hif.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% hif.symbols]
 
 # Select the probes and genes
-exp.EGEOD18494.hif <- as.data.frame(exp.EGEOD18494) %>% 
+expr.EGEOD18494.hif <- as.data.frame(expr.EGEOD18494) %>% 
   rownames_to_column('probes') %>% 
   filter(probes %in% hif.probes) %>% 
   merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
   #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
   dplyr::select(!(probes)) 
-  
+```
 
+``` r
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
 binNet <- function(b){
-  binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
+  
+  cols <- data.EGEOD18494$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
   as.data.frame(.)  %>% 
   aggregate(., list(symbol = b$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
-    rename_at(vars(data.EGEOD18494$codes[data.EGEOD18494$codes %in% names(b)] ),
-            ~paste0(substr(data.EGEOD18494$condition[data.EGEOD18494$codes %in% names(b)],1,4),".",
-                    data.EGEOD18494$time[data.EGEOD18494$codes %in% names(b)],".",
-                    substr(data.EGEOD18494$cell_line[data.EGEOD18494$codes %in% names(b)],1,1), ".",
-                    data.EGEOD18494$rep[data.EGEOD18494$codes %in% names(b)])) %>% 
+    rename_at(vars(data.EGEOD18494$codes[cols] ),
+            ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>% 
   column_to_rownames("symbol")
+  
 }
 ```
 
 # Exemplifying the Binarization
 
 ``` r
+cols <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" & data.EGEOD18494$rep == 1)
+
 breast1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 1], "symbol")) %>% arrange(symbol)
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cols])) %>% arrange(symbol) %>% 
+  arrange(symbol) %>% 
+  rename_at(vars(data.EGEOD18494$codes[cols]),
+            ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2)))
 
-names(breast1x) <- c("norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1", "symbol")
-
-breast1x[, c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")] %>% 
+breast1x %>% 
   knitr::kable(.)
 ```
 
-| symbol | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
-| :----- | ---------------: | ----------: | ----------: | -----------: |
-| EP300  |         7.117723 |    7.444650 |    7.564863 |     7.102371 |
-| EP300  |         7.413672 |    7.507501 |    7.570583 |     7.374402 |
-| HIF1A  |        12.201881 |   11.633014 |   10.456373 |    10.119609 |
-| MDM2   |         5.524042 |    5.320023 |    5.350573 |     5.446186 |
-| MDM2   |         4.045154 |    3.853332 |    4.078569 |     4.257243 |
-| MDM2   |         5.078994 |    4.927372 |    5.029658 |     4.981994 |
-| MDM2   |         6.355831 |    6.328876 |    6.389927 |     6.806724 |
-| MDM2   |         4.287158 |    4.755383 |    4.670058 |     4.462138 |
-| MDM2   |         8.162994 |    8.179121 |    8.219938 |     8.085525 |
-| MDM2   |         7.285900 |    7.207761 |    7.123573 |     6.955918 |
-| MDM2   |         3.623543 |    3.829355 |    3.753720 |     4.100483 |
-| MDM2   |         4.054654 |    4.129631 |    4.067410 |     4.256327 |
-| MDM2   |         8.207312 |    7.778604 |    7.656600 |     7.797764 |
-| TP53   |         8.895355 |    8.773830 |    9.104009 |     9.136858 |
-| TP53   |         8.600345 |    8.240599 |    8.641253 |     8.664151 |
-| VHL    |         7.698038 |    7.713089 |    7.348580 |     7.098092 |
-| VHL    |         3.738962 |    3.749649 |    3.759698 |     3.638137 |
+| symbol | no.control.MD |  hy.4h.MD |  hy.8h.MD | hy.12h.MD |
+| :----- | ------------: | --------: | --------: | --------: |
+| EP300  |      7.117723 |  7.444650 |  7.564863 |  7.102371 |
+| EP300  |      7.413672 |  7.507501 |  7.570583 |  7.374402 |
+| HIF1A  |     12.201881 | 11.633014 | 10.456373 | 10.119609 |
+| MDM2   |      5.524042 |  5.320023 |  5.350573 |  5.446186 |
+| MDM2   |      4.045154 |  3.853332 |  4.078569 |  4.257243 |
+| MDM2   |      5.078994 |  4.927372 |  5.029658 |  4.981994 |
+| MDM2   |      6.355831 |  6.328876 |  6.389927 |  6.806724 |
+| MDM2   |      4.287158 |  4.755383 |  4.670058 |  4.462138 |
+| MDM2   |      8.162994 |  8.179121 |  8.219938 |  8.085525 |
+| MDM2   |      7.285900 |  7.207761 |  7.123573 |  6.955918 |
+| MDM2   |      3.623543 |  3.829355 |  3.753720 |  4.100483 |
+| MDM2   |      4.054654 |  4.129631 |  4.067410 |  4.256327 |
+| MDM2   |      8.207312 |  7.778604 |  7.656600 |  7.797764 |
+| TP53   |      8.895355 |  8.773830 |  9.104009 |  9.136858 |
+| TP53   |      8.600345 |  8.240599 |  8.641253 |  8.664151 |
+| VHL    |      7.698038 |  7.713089 |  7.348580 |  7.098092 |
+| VHL    |      3.738962 |  3.749649 |  3.759698 |  3.638137 |
 
 ``` r
-binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
-  as.data.frame(.)  %>% 
-  add_column(symbol = breast1x$symbol) %>%   dplyr::select( c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1"))  %>% 
+binarizeTimeSeries(breast1x[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
+  add_column(symbol = breast1x$symbol, .before=0) %>% 
   knitr::kable(.)
 ```
 
-| symbol | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
-| :----- | ---------------: | ----------: | ----------: | -----------: |
-| EP300  |                0 |           1 |           1 |            0 |
-| EP300  |                0 |           1 |           1 |            0 |
-| HIF1A  |                1 |           1 |           0 |            0 |
-| MDM2   |                1 |           0 |           0 |            1 |
-| MDM2   |                1 |           0 |           1 |            1 |
-| MDM2   |                1 |           0 |           1 |            0 |
-| MDM2   |                0 |           0 |           0 |            1 |
-| MDM2   |                0 |           1 |           1 |            0 |
-| MDM2   |                1 |           1 |           1 |            0 |
-| MDM2   |                1 |           1 |           1 |            0 |
-| MDM2   |                0 |           0 |           0 |            1 |
-| MDM2   |                0 |           0 |           0 |            1 |
-| MDM2   |                1 |           0 |           0 |            0 |
-| TP53   |                0 |           0 |           1 |            1 |
-| TP53   |                1 |           0 |           1 |            1 |
-| VHL    |                1 |           1 |           0 |            0 |
-| VHL    |                1 |           1 |           1 |            0 |
+| symbol | no.control.MD | hy.4h.MD | hy.8h.MD | hy.12h.MD |
+| :----- | ------------: | -------: | -------: | --------: |
+| EP300  |             0 |        1 |        1 |         0 |
+| EP300  |             0 |        1 |        1 |         0 |
+| HIF1A  |             1 |        1 |        0 |         0 |
+| MDM2   |             1 |        0 |        0 |         1 |
+| MDM2   |             1 |        0 |        1 |         1 |
+| MDM2   |             1 |        0 |        1 |         0 |
+| MDM2   |             0 |        0 |        0 |         1 |
+| MDM2   |             0 |        1 |        1 |         0 |
+| MDM2   |             1 |        1 |        1 |         0 |
+| MDM2   |             1 |        1 |        1 |         0 |
+| MDM2   |             0 |        0 |        0 |         1 |
+| MDM2   |             0 |        0 |        0 |         1 |
+| MDM2   |             1 |        0 |        0 |         0 |
+| TP53   |             0 |        0 |        1 |         1 |
+| TP53   |             1 |        0 |        1 |         1 |
+| VHL    |             1 |        1 |        0 |         0 |
+| VHL    |             1 |        1 |        1 |         0 |
 
 ``` r
-binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
-  as.data.frame(.)  %>% 
+binarizeTimeSeries(breast1x[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
   aggregate(., list(symbol = breast1x$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
   knitr::kable(.)
 ```
 
-| symbol | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
-| :----- | :--------------- | :---------- | :---------- | :----------- |
-| EP300  | 0                | 1           | 1           | 0            |
-| HIF1A  | 1                | 1           | 0           | 0            |
-| MDM2   | 1                | 0           | 1           | 1            |
-| TP53   | 1                | 0           | 1           | 1            |
-| VHL    | 1                | 1           | 1           | 0            |
-| O2     | 1                | 0           | 0           | 0            |
+| symbol | no.control.MD | hy.4h.MD | hy.8h.MD | hy.12h.MD |
+| :----- | :------------ | :------- | :------- | :-------- |
+| EP300  | 0             | 1        | 1        | 0         |
+| HIF1A  | 1             | 1        | 0        | 0         |
+| MDM2   | 1             | 0        | 1        | 1         |
+| TP53   | 1             | 0        | 1        | 1         |
+| VHL    | 1             | 1        | 1        | 0         |
+| O2     | 1             | 0        | 0        | 0         |
 
 # MDA-MB231 breast cancer
 
 ``` r
+cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
+
 breast1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 1], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1])) %>% 
   binNet(.) 
 
 breast1x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.M.1 | hypo.4h.M.1 | hypo.8h.M.1 | hypo.12h.M.1 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 0                | 1           | 1           | 0            |
-| HIF1A | 1                | 1           | 0           | 0            |
-| MDM2  | 1                | 0           | 1           | 1            |
-| TP53  | 1                | 0           | 1           | 1            |
-| VHL   | 1                | 1           | 1           | 0            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.MD.1 | hy.4h.MD.1 | hy.8h.MD.1 | hy.12h.MD.1 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 0               | 1          | 1          | 0           |
+| HIF1A | 1               | 1          | 0          | 0           |
+| MDM2  | 1               | 0          | 1          | 1           |
+| TP53  | 1               | 0          | 1          | 1           |
+| VHL   | 1               | 1          | 1          | 0           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 breast2x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 2], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2])) %>% 
   binNet(.) 
 
 breast2x  %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.M.2 | hypo.4h.M.2 | hypo.8h.M.2 | hypo.12h.M.2 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 1                | 0           | 1           | 1            |
-| HIF1A | 1                | 1           | 0           | 0            |
-| MDM2  | 1                | 0           | 1           | 0            |
-| TP53  | 0                | 1           | 1           | 1            |
-| VHL   | 1                | 1           | 1           | 0            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.MD.2 | hy.4h.MD.2 | hy.8h.MD.2 | hy.12h.MD.2 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 1               | 0          | 1          | 1           |
+| HIF1A | 1               | 1          | 0          | 0           |
+| MDM2  | 1               | 0          | 1          | 0           |
+| TP53  | 0               | 1          | 1          | 1           |
+| VHL   | 1               | 1          | 1          | 0           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 breast3x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 3], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% 
   binNet(.) 
 
 breast3x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.M.3 | hypo.4h.M.3 | hypo.8h.M.3 | hypo.12h.M.3 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 0                | 1           | 1           | 1            |
-| HIF1A | 1                | 1           | 0           | 0            |
-| MDM2  | 1                | 1           | 0           | 1            |
-| TP53  | 0                | 1           | 1           | 1            |
-| VHL   | 1                | 1           | 0           | 1            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.MD.3 | hy.4h.MD.3 | hy.8h.MD.3 | hy.12h.MD.3 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 0               | 1          | 1          | 1           |
+| HIF1A | 1               | 1          | 0          | 0           |
+| MDM2  | 1               | 1          | 0          | 1           |
+| TP53  | 0               | 1          | 1          | 1           |
+| VHL   | 1               | 1          | 0          | 1           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 # All breast cancer nets merged:
@@ -321,7 +282,7 @@ net <- reconstructNetwork(list(breast1x, breast2x, breast3x), method="bestfit",r
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-7-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 print(net)
@@ -360,11 +321,11 @@ print(net)
 ``` r
 # Individual nets of each replica:
 
-net <- reconstructNetwork(breast1x, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+net <- reconstructNetwork(breast1x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-7-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-2.png)<!-- -->
 
 ``` r
 print(net)
@@ -402,11 +363,11 @@ print(net)
     ## O2 = 0
 
 ``` r
-net <- reconstructNetwork(breast2x, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+net <- reconstructNetwork(breast2x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-7-3.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-3.png)<!-- -->
 
 ``` r
 print(net)
@@ -445,11 +406,11 @@ print(net)
     ## O2 = 0
 
 ``` r
-net <- reconstructNetwork(breast3x, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+net <- reconstructNetwork(breast3x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-7-4.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-8-4.png)<!-- -->
 
 ``` r
 print(net)
@@ -524,64 +485,65 @@ print(net)
 # HepG2 hepatoma
 
 ``` r
+cellline.rep1 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 3)
+
 hepatoma1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
-                  data.EGEOD18494$rep == 1], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 hepatoma1x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.H.1 | hypo.4h.H.1 | hypo.8h.H.1 | hypo.12h.H.1 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 1                | 1           | 0           | 0            |
-| HIF1A | 0                | 0           | 1           | 0            |
-| MDM2  | 1                | 1           | 0           | 1            |
-| TP53  | 1                | 1           | 0           | 1            |
-| VHL   | 1                | 0           | 1           | 0            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.He.1 | hy.4h.He.1 | hy.8h.He.1 | hy.12h.He.1 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 1               | 1          | 0          | 0           |
+| HIF1A | 0               | 0          | 1          | 0           |
+| MDM2  | 1               | 1          | 0          | 1           |
+| TP53  | 1               | 1          | 0          | 1           |
+| VHL   | 1               | 0          | 1          | 0           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 hepatoma2x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
-                  data.EGEOD18494$rep == 2], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>% 
   binNet(.) 
 
 hepatoma2x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.H.2 | hypo.4h.H.2 | hypo.8h.H.2 | hypo.12h.H.2 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 0                | 1           | 1           | 1            |
-| HIF1A | 0                | 0           | 1           | 0            |
-| MDM2  | 0                | 1           | 1           | 1            |
-| TP53  | 0                | 1           | 1           | 0            |
-| VHL   | 1                | 0           | 1           | 1            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.He.2 | hy.4h.He.2 | hy.8h.He.2 | hy.12h.He.2 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 0               | 1          | 1          | 1           |
+| HIF1A | 0               | 0          | 1          | 0           |
+| MDM2  | 0               | 1          | 1          | 1           |
+| TP53  | 0               | 1          | 1          | 0           |
+| VHL   | 1               | 0          | 1          | 1           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 hepatoma3x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
-                  data.EGEOD18494$rep == 3], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>% 
   binNet(.) 
 
 hepatoma3x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.H.3 | hypo.4h.H.3 | hypo.8h.H.3 | hypo.12h.H.3 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 1                | 1           | 0           | 1            |
-| HIF1A | 0                | 1           | 1           | 0            |
-| MDM2  | 0                | 1           | 0           | 1            |
-| TP53  | 1                | 1           | 1           | 1            |
-| VHL   | 1                | 1           | 0           | 0            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.He.3 | hy.4h.He.3 | hy.8h.He.3 | hy.12h.He.3 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 1               | 1          | 0          | 1           |
+| HIF1A | 0               | 1          | 1          | 0           |
+| MDM2  | 0               | 1          | 0          | 1           |
+| TP53  | 1               | 1          | 1          | 1           |
+| VHL   | 1               | 1          | 0          | 0           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 # All nets hepatoma merged:
@@ -590,7 +552,7 @@ net <- reconstructNetwork(list(hepatoma1x, hepatoma2x, hepatoma3x), method="best
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-8-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 print(net)
@@ -692,7 +654,7 @@ net <- reconstructNetwork(hepatoma1x, method="bestfit",returnPBN=TRUE,readableFu
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-8-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-2.png)<!-- -->
 
 ``` r
 print(net)
@@ -731,7 +693,7 @@ net <- reconstructNetwork(hepatoma2x, method="bestfit",returnPBN=TRUE,readableFu
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-8-3.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-3.png)<!-- -->
 
 ``` r
 print(net)
@@ -775,7 +737,7 @@ net <- reconstructNetwork(hepatoma3x, method="bestfit",returnPBN=TRUE,readableFu
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-8-4.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-9-4.png)<!-- -->
 
 ``` r
 print(net)
@@ -815,64 +777,65 @@ print(net)
 # U87 glioma
 
 ``` r
+cellline.rep1 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 3)
+
 glioma1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
-                  data.EGEOD18494$rep == 1], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 glioma1x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.U.1 | hypo.4h.U.1 | hypo.8h.U.1 | hypo.12h.U.1 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 1                | 0           | 0           | 1            |
-| HIF1A | 1                | 0           | 0           | 0            |
-| MDM2  | 1                | 0           | 0           | 0            |
-| TP53  | 1                | 0           | 1           | 1            |
-| VHL   | 1                | 1           | 0           | 1            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.U8.1 | hy.4h.U8.1 | hy.8h.U8.1 | hy.12h.U8.1 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 1               | 0          | 0          | 1           |
+| HIF1A | 1               | 0          | 0          | 0           |
+| MDM2  | 1               | 0          | 0          | 0           |
+| TP53  | 1               | 0          | 1          | 1           |
+| VHL   | 1               | 1          | 0          | 1           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 glioma2x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
-                  data.EGEOD18494$rep == 2], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 glioma2x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.U.2 | hypo.4h.U.2 | hypo.8h.U.2 | hypo.12h.U.2 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 1                | 0           | 1           | 0            |
-| HIF1A | 1                | 1           | 0           | 0            |
-| MDM2  | 0                | 0           | 0           | 1            |
-| TP53  | 1                | 0           | 1           | 0            |
-| VHL   | 0                | 1           | 1           | 0            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.U8.1 | hy.4h.U8.1 | hy.8h.U8.1 | hy.12h.U8.1 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 1               | 0          | 0          | 1           |
+| HIF1A | 1               | 0          | 0          | 0           |
+| MDM2  | 1               | 0          | 0          | 0           |
+| TP53  | 1               | 0          | 1          | 1           |
+| VHL   | 1               | 1          | 0          | 1           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 glioma3x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
-                  data.EGEOD18494$rep == 3], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 glioma3x %>% 
   knitr::kable(.)
 ```
 
-|       | norm.control.U.3 | hypo.4h.U.3 | hypo.8h.U.3 | hypo.12h.U.3 |
-| :---- | :--------------- | :---------- | :---------- | :----------- |
-| EP300 | 1                | 1           | 1           | 0            |
-| HIF1A | 1                | 1           | 0           | 0            |
-| MDM2  | 1                | 1           | 1           | 0            |
-| TP53  | 1                | 1           | 1           | 1            |
-| VHL   | 1                | 0           | 1           | 1            |
-| O2    | 1                | 0           | 0           | 0            |
+|       | no.control.U8.1 | hy.4h.U8.1 | hy.8h.U8.1 | hy.12h.U8.1 |
+| :---- | :-------------- | :--------- | :--------- | :---------- |
+| EP300 | 1               | 0          | 0          | 1           |
+| HIF1A | 1               | 0          | 0          | 0           |
+| MDM2  | 1               | 0          | 0          | 0           |
+| TP53  | 1               | 0          | 1          | 1           |
+| VHL   | 1               | 1          | 0          | 1           |
+| O2    | 1               | 0          | 0          | 0           |
 
 ``` r
 # All glioma nets merged:
@@ -881,7 +844,7 @@ net <- reconstructNetwork(list(glioma1x, glioma2x, glioma3x), method="bestfit",r
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-9-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
 print(net)
@@ -895,54 +858,29 @@ print(net)
     ## Transition functions:
     ## 
     ## Alternative transition functions for gene EP300:
-    ## EP300 = (!VHL & !O2) | (HIF1A & !O2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (HIF1A & !O2) | (HIF1A & VHL) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (!HIF1A & VHL & O2) | (HIF1A & !O2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (VHL & O2) | (HIF1A & !O2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (!HIF1A & !VHL) | (HIF1A & !O2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (!HIF1A & !VHL) | (HIF1A & !O2) | (HIF1A & VHL) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (!HIF1A & O2) | (HIF1A & !O2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!VHL & !O2) | (!HIF1A & O2) | (HIF1A & !O2) | (VHL & O2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!HIF1A & !MDM2 & !VHL) | (HIF1A & !MDM2 & VHL) | (HIF1A & MDM2 & !VHL) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!HIF1A & !MDM2 & !VHL) | (HIF1A & VHL) | (HIF1A & MDM2) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!HIF1A & !VHL) | (HIF1A & !MDM2 & VHL) | (MDM2 & !VHL) ( probability: 0.08333333, error: 1)
-    ## EP300 = (!HIF1A & !VHL) | (HIF1A & VHL) | (MDM2 & !VHL) ( probability: 0.08333333, error: 1)
+    ## EP300 = (!VHL) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (O2) ( probability: 1, error: 1)
+    ## HIF1A = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (!MDM2 & TP53 & VHL) | (MDM2 & TP53 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!MDM2 & TP53 & VHL) | (MDM2 & !TP53 & VHL) | (MDM2 & TP53 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!MDM2 & TP53 & VHL) | (MDM2 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!MDM2 & TP53 & VHL) | (MDM2 & !VHL) | (MDM2 & !TP53) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!MDM2 & !TP53 & !VHL) | (!MDM2 & TP53 & VHL) | (MDM2 & TP53 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!MDM2 & !TP53 & !VHL) | (!MDM2 & TP53 & VHL) | (MDM2 & !TP53 & VHL) | (MDM2 & TP53 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!TP53 & !VHL) | (!MDM2 & TP53 & VHL) | (MDM2 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!TP53 & !VHL) | (!MDM2 & TP53 & VHL) | (MDM2 & !TP53) | (MDM2 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (EP300 & !MDM2 & VHL) | (EP300 & MDM2 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!EP300 & MDM2 & VHL) | (EP300 & !MDM2 & VHL) | (EP300 & MDM2 & !VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (MDM2 & !VHL) | (EP300 & !MDM2 & VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (MDM2 & !VHL) | (!EP300 & MDM2) | (EP300 & !MDM2 & VHL) ( probability: 0.0625, error: 1)
-    ## MDM2 = (EP300 & !HIF1A & !MDM2) | (EP300 & HIF1A & MDM2) ( probability: 0.0625, error: 1)
-    ## MDM2 = (HIF1A & MDM2) | (EP300 & !HIF1A & !MDM2) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!EP300 & !HIF1A & MDM2) | (EP300 & !HIF1A & !MDM2) | (EP300 & HIF1A & MDM2) ( probability: 0.0625, error: 1)
-    ## MDM2 = (!EP300 & MDM2) | (EP300 & !HIF1A & !MDM2) | (HIF1A & MDM2) ( probability: 0.0625, error: 1)
+    ## MDM2 = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene TP53:
-    ## TP53 = (!EP300 & !MDM2) | (EP300 & MDM2) ( probability: 0.5, error: 1)
-    ## TP53 = (!EP300) | (MDM2) ( probability: 0.5, error: 1)
+    ## TP53 = (!O2) ( probability: 0.25, error: 0)
+    ## TP53 = (!MDM2) ( probability: 0.25, error: 0)
+    ## TP53 = (!HIF1A) ( probability: 0.25, error: 0)
+    ## TP53 = (!EP300) ( probability: 0.25, error: 0)
     ## 
     ## Alternative transition functions for gene VHL:
-    ## VHL = (!MDM2 & !VHL) | (!HIF1A & MDM2 & VHL) | (HIF1A & !MDM2) | (HIF1A & !VHL) ( probability: 0.25, error: 1)
-    ## VHL = (!MDM2 & !VHL) | (MDM2 & VHL) | (HIF1A) ( probability: 0.25, error: 1)
-    ## VHL = (!VHL) | (!HIF1A & MDM2) | (HIF1A & !MDM2) ( probability: 0.25, error: 1)
-    ## VHL = (!VHL) | (MDM2) | (HIF1A) ( probability: 0.25, error: 1)
+    ## VHL = (TP53) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene O2:
     ## O2 = 0 ( probability: 1, error: 0)
     ## 
     ## Knocked-out and over-expressed genes:
+    ## HIF1A = 0
+    ## MDM2 = 0
     ## O2 = 0
 
 ``` r
@@ -952,7 +890,7 @@ net <- reconstructNetwork(glioma1x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-9-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-10-2.png)<!-- -->
 
 ``` r
 print(net)
@@ -996,7 +934,7 @@ net <- reconstructNetwork(glioma2x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-9-3.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-10-3.png)<!-- -->
 
 ``` r
 print(net)
@@ -1010,27 +948,29 @@ print(net)
     ## Transition functions:
     ## 
     ## Alternative transition functions for gene EP300:
-    ## EP300 = (!TP53) ( probability: 0.5, error: 0)
-    ## EP300 = (!EP300) ( probability: 0.5, error: 0)
+    ## EP300 = (!VHL) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (O2) ( probability: 0.5, error: 0)
-    ## HIF1A = (!VHL) ( probability: 0.5, error: 0)
+    ## HIF1A = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (!HIF1A) ( probability: 1, error: 0)
+    ## MDM2 = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene TP53:
-    ## TP53 = (!TP53) ( probability: 0.5, error: 0)
-    ## TP53 = (!EP300) ( probability: 0.5, error: 0)
+    ## TP53 = (!O2) ( probability: 0.25, error: 0)
+    ## TP53 = (!MDM2) ( probability: 0.25, error: 0)
+    ## TP53 = (!HIF1A) ( probability: 0.25, error: 0)
+    ## TP53 = (!EP300) ( probability: 0.25, error: 0)
     ## 
     ## Alternative transition functions for gene VHL:
-    ## VHL = (HIF1A) ( probability: 1, error: 0)
+    ## VHL = (TP53) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene O2:
     ## O2 = 0 ( probability: 1, error: 0)
     ## 
     ## Knocked-out and over-expressed genes:
+    ## HIF1A = 0
+    ## MDM2 = 0
     ## O2 = 0
 
 ``` r
@@ -1038,7 +978,7 @@ net <- reconstructNetwork(glioma3x, method="bestfit",returnPBN=TRUE,readableFunc
 plotNetworkWiring(net)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-9-4.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-10-4.png)<!-- -->
 
 ``` r
 print(net)
@@ -1052,23 +992,27 @@ print(net)
     ## Transition functions:
     ## 
     ## Alternative transition functions for gene EP300:
-    ## EP300 = (HIF1A) ( probability: 1, error: 0)
+    ## EP300 = (!VHL) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (O2) ( probability: 1, error: 0)
+    ## HIF1A = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (HIF1A) ( probability: 1, error: 0)
+    ## MDM2 = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene TP53:
-    ## TP53 = 1 ( probability: 1, error: 0)
+    ## TP53 = (!O2) ( probability: 0.25, error: 0)
+    ## TP53 = (!MDM2) ( probability: 0.25, error: 0)
+    ## TP53 = (!HIF1A) ( probability: 0.25, error: 0)
+    ## TP53 = (!EP300) ( probability: 0.25, error: 0)
     ## 
     ## Alternative transition functions for gene VHL:
-    ## VHL = (!O2) ( probability: 1, error: 0)
+    ## VHL = (TP53) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene O2:
     ## O2 = 0 ( probability: 1, error: 0)
     ## 
     ## Knocked-out and over-expressed genes:
-    ## TP53 = 1
+    ## HIF1A = 0
+    ## MDM2 = 0
     ## O2 = 0

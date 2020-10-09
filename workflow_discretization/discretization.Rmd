@@ -45,7 +45,7 @@ package.check <- lapply(packages_bioconductor, FUN = function(x) {
   }
 })
 
-packages_cran = c("tidyverse","BiTrinA")
+packages_cran = c("tidyverse", "BiTrinA")
   
 #use this function to check if each package is on the local machine
 #if a package is installed, it will be loaded
@@ -158,7 +158,8 @@ exp.GSE142867.hif.bin <- data.frame(exp.GSE142867.hif.bin %>%
      group_by(Symbol) %>%
      slice(which.min(p.value)))
 
-head(exp.GSE142867.hif.bin)
+head(exp.GSE142867.hif.bin) %>% 
+  knitr::kable(.)
 ```
 
 ```{r}
@@ -169,7 +170,8 @@ exp.GSE142867.hif.mean <- exp.GSE142867.hif.bin %>%
         hypo.d10 = rowMeans(dplyr::select(., starts_with("hypo.d10"))))  %>%
   dplyr::select(., -ends_with(c(".",".1",".2")))
 
-exp.GSE142867.hif.mean
+exp.GSE142867.hif.mean %>% 
+  knitr::kable(.)
 ```
 
 
@@ -183,7 +185,8 @@ exp.GSE142867.hif.pivot$codes <- factor(exp.GSE142867.hif.pivot$codes,  levels =
 
 exp.GSE142867.hif.pivot$time <- as.numeric(exp.GSE142867.hif.pivot$codes)
 
-head(exp.GSE142867.hif.pivot)
+head(exp.GSE142867.hif.pivot) %>% 
+  knitr::kable(.)
 
 ```
    
@@ -289,7 +292,8 @@ exp.EGEOD18494.hif.bin <- data.frame(exp.EGEOD18494.hif.bin %>%
      group_by(Symbol) %>%
      slice(which.min(p.value)))
 
-head(exp.EGEOD18494.hif.bin)
+head(exp.EGEOD18494.hif.bin)%>% 
+  knitr::kable(.)
 
 ```
 
@@ -303,7 +307,8 @@ exp.EGEOD18494.hif.mean <- exp.EGEOD18494.hif.bin %>%
         hypo.12h = rowMeans(dplyr::select(., starts_with("hypo.12"))))  %>%
   dplyr::select(., -ends_with(c("1","2","3")))
 
-exp.EGEOD18494.hif.mean
+exp.EGEOD18494.hif.mean %>% 
+  knitr::kable(.)
 ```
 
 
@@ -317,7 +322,8 @@ exp.EGEOD18494.hif.mean.pivot$codes <- factor(exp.EGEOD18494.hif.mean.pivot$code
 
 exp.EGEOD18494.hif.mean.pivot$time <- as.numeric(exp.EGEOD18494.hif.mean.pivot$codes)
 
-head(exp.EGEOD18494.hif.mean.pivot)
+head(exp.EGEOD18494.hif.mean.pivot) %>% 
+  knitr::kable(.)
 
 ```
    

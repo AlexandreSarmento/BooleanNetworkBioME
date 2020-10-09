@@ -34,7 +34,7 @@ Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma
 All analyses were performed in R (v2.11.1). Data processing was performed for each cell line separately using RMA (affy package, v1.26.1) for pre-processing, and updated Entrez GeneID annotation (hgu133plus2hsentrezgcdf package, v13.0.0).
 
 ```{r message=FALSE, warning=FALSE}
-packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff")
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
 
 
 # Install and load packages
@@ -48,7 +48,11 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 # For oligo and ArrayExpress First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
 
-packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "preprocessCore")
+if(!require("hgu133plus2hsentrezg.db")){ 
+  install.packages('http://mbni.org/customcdf/13.0.0/entrezg.download/hgu133plus2hsentrezg.db_13.0.0.tar.gz',repos=NULL) 
+  }
+
+packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "ArrayExpress", "annotate")
 
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
@@ -62,60 +66,65 @@ rm(package.check, packages_bioconductor, packages_cran)
 
 ```
 
+
+<!-- ```{r} -->
+
+<!-- download_dir <- fs::path(".data_tmp") -->
+<!-- if (!dir_exists(download_dir)) { dir_create(download_dir) } -->
+
+<!-- GSE41491 <-getGEO("GSE41491", destdir = download_dir, GSEMatrix = T) -->
+
+<!-- expr.GSE41491 <- as.matrix(exprs(normalize.ExpressionSet.quantiles(GSE41491[[1]]))) -->
+<!-- data.GSE41491 <- pData(GSE41491[[1]]) -->
+
+<!-- data.GSE41491 <- data.frame( -->
+<!--                   codes = as.character(data.GSE41491$geo_accession), -->
+<!--                   cell_line = gsub("[(]","",gsub("[)]","",substr(as.character(data.GSE41491$source_name_ch1),18,25))), -->
+<!--                   time = substr(as.character(data.GSE41491$characteristics_ch1.1),18,19), -->
+<!--                   condition = substr(as.character(data.GSE41491$characteristics_ch1),12,13)) -->
+
+<!-- GPL14877 <- read_delim(".data_tmp/GPL14877.soft", -->
+<!--     "\t", escape_double = FALSE, trim_ws = TRUE, -->
+<!--     skip = 393) -->
+
+<!-- ENTREZID <- as.character(unique(GPL14877$SPOT_ID)) -->
+<!-- PROBES <- unique(rownames(expr.GSE41491)) -->
+
+<!-- library(hgu133plus2hsentrezg.db) -->
+<!-- SYMBOL <- getSYMBOL(PROBES, "hgu133plus2hsentrezg") -->
+<!-- results <- as.data.frame(cbind(PROBES, SYMBOL)) -->
+
+<!-- # Convert the probes to Symbol names -->
+<!-- anno.GSE41491 <- AnnotationDbi::select(hgu133plus2.db, -->
+<!--        keys = ENTREZID, -->
+<!--        columns=c("SYMBOL", "GENENAME"), -->
+<!--        keytype="ENTREZID") -->
+
+<!-- anno.GSE41491 <- merge(anno.GSE41491, results, by="SYMBOL", all.x = T) %>% -->
+<!--   filter(!is.na(SYMBOL)) %>% -->
+<!--   mutate_all(as.character) %>% -->
+<!--   rename_at(vars(c("SYMBOL", "ENTREZID", "GENENAME", "PROBES")), ~ c("symbol", "entrezid", "description", "probes")) -->
+
+<!-- rm(download_dir, GSE41491, results, GPL14877, PROBES, SYMBOL, ENTREZID) -->
+
+<!-- save.image("../data/data.GSE41491.Rdata") -->
+<!-- ``` -->
+
+
+# Load the pre-processed data
+
 ```{r}
-
-download_dir <- fs::path(".data_tmp")
-if (!dir_exists(download_dir)) { dir_create(download_dir) }  
-
-GSE41491 <-getGEO("GSE41491", destdir = download_dir, GSEMatrix = T)
-
-expr.GSE41491 <- exprs(GSE41491[[1]])
-prob.GSE41491 <- unique(rownames(expr.GSE41491))
-data.GSE41491 <- pData(GSE41491[[1]])
-
-data.GSE41491 <- data.frame(
-                  codes = as.character(data.GSE41491$geo_accession),
-                  cell_line = substr(as.character(data.GSE41491$source_name_ch1),18,25),
-                  time = substr(as.character(data.GSE41491$characteristics_ch1.1),18,19),
-                  condition = substr(as.character(data.GSE41491$characteristics_ch1),12,13))
-
-# Convert the probes to Symbol names
-#Affymetrix Human Genome U133 Plus 2.0 Array [Brainarray Version 15.0.0, HGU133Plus2_Hs_ENTREZG]
-#  load/install the package
-if(!require("hgu133plus2.db")) BiocManager::install("hgu133plus2.db")
-
-# The below function call will return a datafram with probe_id, gene symbol
-# and ŕefgene_id for your data
-
-library(readr)
-GPL14877 <- read_delim("workflow_boolnet/.data_tmp/GPL14877.soft", 
-    "\t", escape_double = FALSE, trim_ws = TRUE, 
-    skip = 393)
-
-anno.GSE41491 <- AnnotationDbi::select(hgu133plus2.db, 
-       keys = prob.GSE41491, 
-       columns=c("ENTREZID", "ENSEMBL", "SYMBOL", "GENENAME"), 
-       keytype="PROBEID")
-
-colnames(anno.GSE41491) <- c("probes", "ensgene", "symbol", "description")
-
-rm(download_dir, GSE41491,  prob.GSE41491)
-
+load("../data/data.GSE41491.Rdata")
 ```
 
 
 # Selecting the HIF Genes 
     
 ```{r}
-# Genes from Boolean Network:    
-# HIF1a, HIF2a, p53, BNIP3, VEGF, cMyc, Oct4, cdc20, cycA, cycB, cycE, cycD, p27, Rb, E2F, cdh1, mdm2, BAD, BclX
-
-# hif.symbols <- c("HIF1A", "HIF1", "PASD8", "MOP1", "EPAS1", "HIF2A", "HLF", "PASD2", "MOP2", "VEGFA", "VPF", "MVCD1", "VEGF-A", "TP53", "P53", "MYC", "C-Myc", "POU5F1", "OCT3", "OTF3", "CDC20", "P55CDC", "CDC20A", "CCNA1", "CCNA1", "CCNA2", "CCN1", "CCNA", "CCNB1", "CCNB", "CCNB1", "CCNB2", "CCNB2", "HsT17299", "CCND1", "PRAD1", "CCND2", "MPPH3", "CCNE1", "CCNE1", "CCNE", "PCCNE1", "CCNE2", "CCNE2", "CCNE", "PCCNE1", "CDKN1B", "KIP1", "P27KIP1", "CDKN4MEN4", "RB1", "PPP1R130", "Pp110", "E2F1", "RBAP-1", "BNIP3", "NIP3", "BCL2", "MCL1", "BCL2L3", "CDH1", "CD324", "UBE2C", "BAD", "BCL2L8", "VHL", "PVHL", "VHL1", "MDM2", "HDM2", "EP300", "P300", "KAT3B")
-
 # Selected genes from HIF Axis
-hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
+hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VBP1") 
 
-hif.probes <- anno.GSE41491$probes[anno.GSE41491$symbol %in% hif.symbols]
+hif.probes <- unique(anno.GSE41491$probes[anno.GSE41491$symbol %in% hif.symbols])
 
 # Select the probes and genes
 expr.GSE41491.hif <- data.frame(expr.GSE41491) %>% 
@@ -126,22 +135,27 @@ expr.GSE41491.hif <- data.frame(expr.GSE41491) %>%
   dplyr::select(!(probes)) %>% 
   arrange(symbol)
   
+```
 
+```{r}
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
 binNet <- function(b){
-  binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
-  data.frame(.)  %>% 
-  aggregate(., list(symbol = b$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
-  rbind(., c("O2", 1,0,0,0)) %>% 
-    rename_at(vars(data.GSE41491$codes[data.GSE41491$codes %in% names(b)]),
-            ~paste0(data.GSE41491$condition[data.GSE41491$codes %in% names(b)],".",
-                    data.GSE41491$time[data.GSE41491$codes %in% names(b)],".",
-                    data.GSE41491$rep[data.GSE41491$codes %in% names(b)])) %>% 
+  
+  cols <- data.GSE41491$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  rbind(., c("O2", 1,,0,0,0,0,0,0,0)) %>% 
+    rename_at(vars(data.GSE41491$codes[cols] ),
+            ~paste0(substr(data.GSE41491$condition[cols],1,2),".",
+                    data.GSE41491$time[cols],".",
+                    substr(data.GSE41491$cell_line[cols],1,2))) %>% 
   column_to_rownames("symbol")
+  
 }
-
-
 ```
 
 Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
@@ -150,69 +164,90 @@ Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma
 
 breast1_MCF7 <- 
 expr.GSE41491.hif %>% 
-  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 1], "symbol")) %>% arrange(symbol)
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"])) %>% arrange(symbol) %>% 
+  rename_at(vars(data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"]),
+            ~paste0(data.GSE41491$condition[data.GSE41491$cell_line == "MCF7"],".",
+                    data.GSE41491$time[data.GSE41491$cell_line == "MCF7"],".",
+                    data.GSE41491$cell_line[data.GSE41491$cell_line == "MCF7"]))
 
-names(breast1_MCF7) <- c("Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1", "symbol")
+knitr::kable(breast1_MCF7)
 
-knitr::kable(breast1_MCF7[, c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1")])
-
-binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
-  add_column(symbol = breast1_MCF7$symbol) %>%   dplyr::select(c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1"))  %>% 
+  add_column(symbol = breast1_MCF7$symbol, .before=0) %>% 
   knitr::kable(.)
   
-binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
   aggregate(., list(symbol = breast1_MCF7$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
-  rbind(., c("O2", 1,0,0,0)) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
+  rbind(., c("O2", 1,0,0,0,0,0,0,0)) %>% 
   knitr::kable(.)
   
 ```
 
-# MDA-MB231 breast cancer
+# breast (MCF7) carcinoma cells 
 
 ```{r}
 
-breast1_MCF7 <- 
+breast_MCF7 <- 
 expr.GSE41491.hif %>% 
-  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 1], "symbol"))  %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"]))  %>% 
   binNet(.) 
-knitr::kable(breast1_MCF7)
+knitr::kable(breast_MCF7)
 
 
-breast2_MCF7 <- 
+# Individual net
+
+net <- reconstructNetwork(breast_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+```
+
+# prostate (DU145) carcinoma cells 
+
+```{r}
+
+prostate_DU145 <- 
 expr.GSE41491.hif %>% 
-  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 2], "symbol"))  %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "DU145"]))  %>% 
   binNet(.) 
-knitr::kable(breast2_MCF7)
+knitr::kable(prostate_DU145)
 
 
-breast3_MCF7 <- 
+net <- reconstructNetwork(prostate_DU145, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+```
+
+#  colon (HT29)  carcinoma cells 
+
+```{r}
+
+colon_MCF7 <- 
 expr.GSE41491.hif %>% 
-  dplyr::select(c(data.GSE41491$codes[data.GSE41491$rep == 3], "symbol"))  %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "HT29"]))  %>% 
   binNet(.) 
-knitr::kable(breast3_MCF7)
+knitr::kable(colon_MCF7)
 
-# All breast cancer nets merged:
 
-net <- reconstructNetwork(list(breast1_MCF7, breast2_MCF7, breast3_MCF7), method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+# Individual net
+
+net <- reconstructNetwork(colon_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 plotNetworkWiring(net)
 print(net)
 
-# Individual nets of each replica:
-
-net <- reconstructNetwork(breast1_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-
-net <- reconstructNetwork(breast2_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-
-net <- reconstructNetwork(breast3_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
 ```
 
 
+# All three cells prostate (DU145), colon (HT29) and breast (MCF7) carcinoma 
+
+```{r}
+
+net <- reconstructNetwork(list(breast_MCF7,prostate_DU145, colon_MCF7), method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+plotNetworkWiring(net)
+print(net)
+
+```

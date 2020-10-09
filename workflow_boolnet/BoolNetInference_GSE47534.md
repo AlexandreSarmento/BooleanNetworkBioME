@@ -64,7 +64,7 @@ GSE47533 <-getGEO("GSE47533", destdir = download_dir, GSEMatrix = T)
     ## Using locally cached version: .data_tmp/GSE47533_series_matrix.txt.gz
 
     ## 
-    ## ── Column specification ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ## ── Column specification ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     ## cols(
     ##   ID_REF = col_character(),
     ##   GSM1151682 = col_double(),
@@ -161,7 +161,7 @@ binNet <- function(b){
   binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
   aggregate(., list(symbol = b$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
     rename_at(vars(data.GSE47533$codes[data.GSE47533$codes %in% names(b)]),
             ~paste0(data.GSE47533$condition[data.GSE47533$codes %in% names(b)],".",
@@ -222,7 +222,7 @@ binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>
 binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
   aggregate(., list(symbol = breast1_MCF7$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
   knitr::kable(.)
 ```

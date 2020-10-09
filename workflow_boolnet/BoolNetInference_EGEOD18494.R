@@ -19,7 +19,7 @@
 #' 
 #' 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
-packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff", "RSQLite")
 
 
 # Install and load packages
@@ -30,12 +30,10 @@ package.check <- lapply(packages_cran, FUN = function(x) {
   }
 })
 
-library(RSQLite, lib.loc = "/usr/local/lib/R/site-library")
-
-# For oligo and ArrayExpress First install:
+# For oligo First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
 
-packages_bioconductor = c("Biobase", "GEOquery", "ArrayExpress", "hgu133plus2.db", "preprocessCore")
+packages_bioconductor = c("Biobase", "GEOquery", "ArrayExpress", "hgu133plus2.db")
 
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
@@ -72,19 +70,20 @@ data.EGEOD18494$rep <- rep(1:3, n= length(data.EGEOD18494$codes))
 # Normalisation
 eset.EGEOD18494 <- oligo::rma(EGEOD18494,  normalize = TRUE)
 
-exp.EGEOD18494 <- exprs(eset.EGEOD18494)
+expr.EGEOD18494 <- exprs(eset.EGEOD18494)
 
-colnames(exp.EGEOD18494) <- substr(colnames(exp.EGEOD18494),1,9)
+# Convert to a data.frame
+expr.EGEOD18494 <- as.data.frame(as.ffdf(expr.EGEOD18494))
 
-EGEOD18494@annotation
+colnames(expr.EGEOD18494) <- substr(colnames(expr.EGEOD18494),1,9)
 
-rm(download_dir)
+rm(download_dir, EGEOD18494, eset.EGEOD18494)
 
 #' 
 #' # Convert the probes to Symbol names
 #' 
 ## -----------------------------------------------------------------------------
-anno.EGEOD18494 <- AnnotationDbi::select(hgu133plus2.db, keys=rownames(exp.EGEOD18494), columns=c("ENSEMBL", "SYMBOL", "GENENAME"), keytype="PROBEID")
+anno.EGEOD18494 <- AnnotationDbi::select(hgu133plus2.db, keys=rownames(expr.EGEOD18494), columns=c("ENSEMBL", "SYMBOL", "GENENAME"), keytype="PROBEID")
 
 colnames(anno.EGEOD18494) <- c("probes", "ensgene", "symbol", "description")
 
@@ -100,7 +99,7 @@ hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
 hif.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% hif.symbols]
 
 # Select the probes and genes
-exp.EGEOD18494.hif <- as.data.frame(exp.EGEOD18494) %>% 
+expr.EGEOD18494.hif <- as.data.frame(expr.EGEOD18494) %>% 
   rownames_to_column('probes') %>% 
   filter(probes %in% hif.probes) %>% 
   merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
@@ -108,77 +107,89 @@ exp.EGEOD18494.hif <- as.data.frame(exp.EGEOD18494) %>%
   dplyr::select(!(probes)) 
   
 
+#' 
+#' 
+## -----------------------------------------------------------------------------
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
 binNet <- function(b){
-  binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
+  
+  cols <- data.EGEOD18494$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
   as.data.frame(.)  %>% 
   aggregate(., list(symbol = b$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
-    rename_at(vars(data.EGEOD18494$codes[data.EGEOD18494$codes %in% names(b)] ),
-            ~paste0(substr(data.EGEOD18494$condition[data.EGEOD18494$codes %in% names(b)],1,4),".",
-                    data.EGEOD18494$time[data.EGEOD18494$codes %in% names(b)],".",
-                    substr(data.EGEOD18494$cell_line[data.EGEOD18494$codes %in% names(b)],1,1), ".",
-                    data.EGEOD18494$rep[data.EGEOD18494$codes %in% names(b)])) %>% 
+    rename_at(vars(data.EGEOD18494$codes[cols] ),
+            ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>% 
   column_to_rownames("symbol")
+  
 }
-
 
 #' 
 #' # Exemplifying the Binarization 
 #' 
 ## -----------------------------------------------------------------------------
 
+cols <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" & data.EGEOD18494$rep == 1)
+
 breast1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 1], "symbol")) %>% arrange(symbol)
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cols])) %>% arrange(symbol) %>% 
+  arrange(symbol) %>% 
+  rename_at(vars(data.EGEOD18494$codes[cols]),
+            ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2)))
 
-names(breast1x) <- c("norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1", "symbol")
-
-breast1x[, c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1")] %>% 
+breast1x %>% 
   knitr::kable(.)
 
-binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
-  as.data.frame(.)  %>% 
-  add_column(symbol = breast1x$symbol) %>%   dplyr::select( c("symbol","norm.control.M.1",  "hypo.4h.M.1", "hypo.8h.M.1", "hypo.12h.M.1"))  %>% 
+binarizeTimeSeries(breast1x[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
+  add_column(symbol = breast1x$symbol, .before=0) %>% 
   knitr::kable(.)
   
-binarizeTimeSeries(breast1x[,-5], method="kmeans")$binarizedMeasurements  %>% 
-  as.data.frame(.)  %>% 
+binarizeTimeSeries(breast1x[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  data.frame(.)  %>% 
   aggregate(., list(symbol = breast1x$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
   knitr::kable(.)
-  
+
 
 #' 
 #' # MDA-MB231 breast cancer
 #' 
 ## -----------------------------------------------------------------------------
 
+cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
+
 breast1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 1], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1])) %>% 
   binNet(.) 
 
 breast1x %>% 
   knitr::kable(.)
 
 breast2x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 2], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2])) %>% 
   binNet(.) 
 
 breast2x  %>% 
   knitr::kable(.)
 
 breast3x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &
-                  data.EGEOD18494$rep == 3], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% 
   binNet(.) 
 
 breast3x %>% 
@@ -192,15 +203,15 @@ print(net)
 
 # Individual nets of each replica:
 
-net <- reconstructNetwork(breast1x, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+net <- reconstructNetwork(breast1x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 plotNetworkWiring(net)
 print(net)
 
-net <- reconstructNetwork(breast2x, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+net <- reconstructNetwork(breast2x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 plotNetworkWiring(net)
 print(net)
 
-net <- reconstructNetwork(breast3x, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+net <- reconstructNetwork(breast3x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 plotNetworkWiring(net)
 print(net)
 
@@ -210,28 +221,29 @@ print(net)
 #' 
 ## -----------------------------------------------------------------------------
 
+cellline.rep1 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 3)
+
 hepatoma1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
-                  data.EGEOD18494$rep == 1], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 hepatoma1x %>% 
   knitr::kable(.)
 
 hepatoma2x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
-                  data.EGEOD18494$rep == 2], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>% 
   binNet(.) 
 
 hepatoma2x %>% 
   knitr::kable(.)
 
 hepatoma3x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "HepG2 hepatoma" &
-                  data.EGEOD18494$rep == 3], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>% 
   binNet(.) 
 
 hepatoma3x %>% 
@@ -261,29 +273,29 @@ print(net)
 #' # U87 glioma
 #' 
 ## -----------------------------------------------------------------------------
+cellline.rep1 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 3)
 
 glioma1x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
-                  data.EGEOD18494$rep == 1], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 glioma1x %>% 
   knitr::kable(.)
 
 glioma2x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
-                  data.EGEOD18494$rep == 2], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 glioma2x %>% 
   knitr::kable(.)
 
 glioma3x <- 
-exp.EGEOD18494.hif %>% 
-  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "U87 glioma" &
-                  data.EGEOD18494$rep == 3], "symbol"))  %>% 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>% 
   binNet(.) 
 
 glioma3x %>% 

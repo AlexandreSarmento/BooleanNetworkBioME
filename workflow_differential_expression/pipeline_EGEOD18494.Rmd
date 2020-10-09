@@ -98,7 +98,15 @@ data.EGEOD18494$rep <- rep(1:3, n= length(data.EGEOD18494$codes))
 
 eset.EGEOD18494 <- oligo::rma(EGEOD18494,  normalize = FALSE)
 
+eset.EGEOD18494_norm <- oligo::rma(EGEOD18494,  normalize = TRUE)
+
 exp.EGEOD18494 <- exprs(eset.EGEOD18494)
+exp.EGEOD18494_no_rma <- EGEOD18494@assayData[["exprs"]]
+exp.EGEOD18494_norm <- exprs(eset.EGEOD18494_norm)
+
+exp.EGEOD18494["200989_at",]
+
+exp.EGEOD18494_norm["200989_at",]
 
 colnames(exp.EGEOD18494) <- substr(colnames(exp.EGEOD18494),1,9)
 

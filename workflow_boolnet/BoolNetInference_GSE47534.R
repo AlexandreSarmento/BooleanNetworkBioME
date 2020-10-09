@@ -29,7 +29,6 @@
 ## ----message=FALSE, warning=FALSE---------------------------------------------
 packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff")
 
-
 # Install and load packages
 package.check <- lapply(packages_cran, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
@@ -41,7 +40,7 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 # For oligo and ArrayExpress First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
 
-packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "hgu133plus2.db", "preprocessCore")
+packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "illuminaHumanv3.db")
 
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
@@ -62,7 +61,8 @@ if (!dir_exists(download_dir)) { dir_create(download_dir) }
 
 GSE47533 <-getGEO("GSE47533", destdir = download_dir, GSEMatrix = T)
 
-expr.GSE47533 <- exprs(GSE47533[[1]])
+#expr.GSE47533 <- exprs(GSE47533[[1]])
+expr.GSE47533 <- exprs(oligo::rma(GSE47533[[1]], normalize = TRUE))
 prob.GSE47533 <- unique(rownames(expr.GSE47533))
 data.GSE47533 <- pData(GSE47533[[1]])
 
@@ -83,13 +83,8 @@ data.GSE47533$time[data.GSE47533$condition == "Norm"] <- ''
 
 
 # Convert the probes to Symbol names
-
-#  load/install the package
-if(!require("illuminaHumanv3.db")) BiocManager::install("illuminaHumanv3.db")
-
 # The below function call will return a datafram with probe_id, gene symbol
 # and ŕefgene_id for your data
-
 anno.GSE47533 <- AnnotationDbi::select(illuminaHumanv3.db, 
        keys = prob.GSE47533, 
        columns=c("ENSEMBL", "SYMBOL", "GENENAME"), 
@@ -127,10 +122,10 @@ expr.GSE47533.hif <- data.frame(expr.GSE47533) %>%
 
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
 binNet <- function(b){
-  binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
   aggregate(., list(symbol = b$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
     rename_at(vars(data.GSE47533$codes[data.GSE47533$codes %in% names(b)]),
             ~paste0(data.GSE47533$condition[data.GSE47533$codes %in% names(b)],".",
@@ -142,32 +137,59 @@ binNet <- function(b){
 
 
 #' 
+## -----------------------------------------------------------------------------
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
+binNet <- function(b){
+  
+  cols <- data.GSE47533$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
+  rbind(., c("O2", 1,0,0,0)) %>% 
+    rename_at(vars(data.GSE47533$codes[cols] ),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2), ".",
+                    data.GSE47533$rep[cols])) %>% 
+  column_to_rownames("symbol")
+  
+}
+
 #' 
 ## -----------------------------------------------------------------------------
 
+
+cols <- (data.GSE47533$rep == 1)
+
 breast1_MCF7 <- 
 expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol")) %>% arrange(symbol)
+  dplyr::select(c("symbol", data.GSE47533$codes[cols])) %>% arrange(symbol) %>% 
+  arrange(symbol) %>% 
+  rename_at(vars(data.GSE47533$codes[cols]),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2)))
 
-names(breast1_MCF7) <- c("Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1", "symbol")
+knitr::kable(breast1_MCF7)
 
-knitr::kable(breast1_MCF7[, c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1")])
-
-binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
-  add_column(symbol = breast1_MCF7$symbol) %>%   dplyr::select(c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1"))  %>% 
+  add_column(symbol = breast1_MCF7$symbol, .before=0) %>% 
   knitr::kable(.)
   
-binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
   aggregate(., list(symbol = breast1_MCF7$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. > 0.4, 1, 0))) %>% 
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
   rbind(., c("O2", 1,0,0,0)) %>% 
   knitr::kable(.)
   
 
 #' 
-#' # MDA-MB231 breast cancer
+#' # MCF7 breast cancer
 #' 
 ## -----------------------------------------------------------------------------
 

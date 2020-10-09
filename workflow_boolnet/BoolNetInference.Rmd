@@ -1,359 +1,328 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "BoolNet Inference (E-GEOD-18494, GSE47533 and GSE41491)"
+output:
+  pdf_document: default
+  github_document: 
+    df_print: paged
+    html_preview: FALSE
+    keep_html: TRUE
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })    
 ---
-
-
-```{r message=FALSE, warning=FALSE}
-#setwd("~/boolnet")
-
-if(!require("igraph")){install.packages('igraph')}
-
-if(!require("BoolNet")){install.packages('BoolNet')}
-
-if(!require("BiocManager")){BiocManager::install("BiocManager")}# Install bioconductor
-
-if(!require("dplyr")){BiocManager::install("dplyr")}# Install dplyr
-
-if(!require("Biobase")){BiocManager::install("Biobase")}# Install Biobase
-
-if(!require("GEOquery")){BiocManager::install("GEOquery")}# Install GEOquery
-
-```
-
-```{r}
-# Reading data
-gse <- getGEO("GSE18494", destdir = "../data/GSE18494", GSEMatrix = FALSE)
-gsmplatforms <- lapply(GSMList(gse),function(x) {Meta(x)$platform_id})
-gsmlist = Filter(function(gsm) {Meta(gsm)$platform_id=='GPL9419'},GSMList(gse))
-probesets <- Table(GPLList(gse)[[1]])$ID
-data.matrix <- do.call('cbind',lapply(gsmlist,function(x) 
-{tab <- Table(x)
-mymatch <- match(probesets,tab$ID_REF)
-return(tab$VALUE[mymatch])
-}))
-rownames(data.matrix) <- probesets
-df <- as.data.frame(data.matrix)
-```
-
-```{r}
-names(df)[names(df) == "GSM460669"] <- "norm.control.H1"
-names(df)[names(df) == "GSM460670"] <- "norm.control.H2"
-names(df)[names(df) == "GSM460671"] <- "norm.control.H3"
-names(df)[names(df) == "GSM460672"] <- "hypo.4h.H1"
-names(df)[names(df) == "GSM460673"] <- "hypo.4h.H2"
-names(df)[names(df) == "GSM460674"] <- "hypo.4h.H3"
-names(df)[names(df) == "GSM460675"] <- "hypo.8h.H1"
-names(df)[names(df) == "GSM460676"] <- "hypo.8h.H2"
-names(df)[names(df) == "GSM460677"] <- "hypo.8h.H3"
-names(df)[names(df) == "GSM460678"] <- "hypo.12h.H1"
-names(df)[names(df) == "GSM460679"] <- "hypo.12h.H2"
-names(df)[names(df) == "GSM460680"] <- "hypo.12h.H3"
-
-
-names(df)[names(df) == "GSM460681"] <- "norm.control.U1"
-names(df)[names(df) == "GSM460682"] <- "norm.control.U2"
-names(df)[names(df) == "GSM460683"] <- "norm.control.U3"
-names(df)[names(df) == "GSM460684"] <- "hypo.4h.U1"
-names(df)[names(df) == "GSM460685"] <- "hypo.4h.U2"
-names(df)[names(df) == "GSM460686"] <- "hypo.4h.U3"
-names(df)[names(df) == "GSM460687"] <- "hypo.8h.U1"
-names(df)[names(df) == "GSM460688"] <- "hypo.8h.U2"
-names(df)[names(df) == "GSM460689"] <- "hypo.8h.U3"
-names(df)[names(df) == "GSM460690"] <- "hypo.12h.U1"
-names(df)[names(df) == "GSM460691"] <- "hypo.12h.U2"
-names(df)[names(df) == "GSM460692"] <- "hypo.12h.U3"
-
-
-names(df)[names(df) == "GSM460693"] <- "norm.control.M1"
-names(df)[names(df) == "GSM460694"] <- "norm.control.M2"
-names(df)[names(df) == "GSM460695"] <- "norm.control.M3"
-names(df)[names(df) == "GSM460696"] <- "hypo.4h.M1"
-names(df)[names(df) == "GSM460697"] <- "hypo.4h.M2"
-names(df)[names(df) == "GSM460698"] <- "hypo.4h.M3"
-names(df)[names(df) == "GSM460699"] <- "hypo.8h.M1"
-names(df)[names(df) == "GSM460700"] <- "hypo.8h.M2"
-names(df)[names(df) == "GSM460701"] <- "hypo.8h.M3"
-names(df)[names(df) == "GSM460702"] <- "hypo.12h.M1"
-names(df)[names(df) == "GSM460703"] <- "hypo.12h.M2"
-names(df)[names(df) == "GSM460704"] <- "hypo.12h.M3"
+```{r error=TRUE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
+## This chunk automatically generates a text .R version of this script when running within knitr.
+input  = knitr::current_input()  # filename of input document
+output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
+try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
+# Avoid duplicate label error of knitr::purl
+options(knitr.duplicate.label = 'allow')
+# Code to browse the markdown file with renderized images.
+knitr::opts_chunk$set(
+  fig.path = "figs/BoolNetInfer-"
+)
 ```
 
 
-```{r}
-# Separating replicas
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff","RSQLite")
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "ggraph")
 
-# Breast Cancer
-breast1 <- df[c("norm.control.M1", "hypo.4h.M1", "hypo.8h.M1","hypo.12h.M1")]
-breast2 <- df[c("norm.control.M2", "hypo.4h.M2", "hypo.8h.M2","hypo.12h.M2")]
-breast3 <- df[c("norm.control.M3", "hypo.4h.M3", "hypo.8h.M3","hypo.12h.M3")]
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
 
-
-# Glioma Cancer
-glioma1 <- df[c("norm.control.U1", "hypo.4h.U1", "hypo.8h.U1","hypo.12h.U1")]
-glioma2 <- df[c("norm.control.U2", "hypo.4h.U2", "hypo.8h.U2","hypo.12h.U2")]
-glioma3 <- df[c("norm.control.U3", "hypo.4h.U3", "hypo.8h.U3","hypo.12h.U3")]
-
-
-# Hepatoma Cancer
-hepatoma1 <- df[c("norm.control.H1", "hypo.4h.H1", "hypo.8h.H1","hypo.12h.H1")]
-hepatoma2 <- df[c("norm.control.H2", "hypo.4h.H2", "hypo.8h.H2","hypo.12h.H2")]
-hepatoma3 <- df[c("norm.control.H3", "hypo.4h.H3", "hypo.8h.H3","hypo.12h.H3")]
-```
+if(!require('cowplot')) {install.packages('cowplot')} # provides various features that help with creating publication-quality figures
+if(!require('grid')){install.packages('grid')} # 
+if(!require('gridExtra')) {install.packages('gridExtra')} #  Provides a number of user-level functions to work with "grid" graphics, notably to arrange multiple grid-based plots on a page, and draw tables.
 
 
-```{r}
-row.names(df) = substr(row.names(df),1,nchar(row.names(df))-3)
+# For oligo and ArrayExpress First install:
+#install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
+# 
+# if(!require("hgu133plus2hsentrezg.db")){ 
+#   install.packages('http://mbni.org/customcdf/13.0.0/entrezg.download/hgu133plus2hsentrezg.db_13.0.0.tar.gz',repos=NULL) 
+# }
+# 
+#packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "ArrayExpress", "illuminaHumanv3.db", "hgu133plus2.db")
+packages_bioconductor = c()
 
-row.names(breast1) = substr(row.names(breast1),1,nchar(row.names(breast1))-3)
-row.names(breast2) = substr(row.names(breast2),1,nchar(row.names(breast2))-3)
-row.names(breast3) = substr(row.names(breast3),1,nchar(row.names(breast3))-3)
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
 
-row.names(glioma1) = substr(row.names(glioma1),1,nchar(row.names(glioma1))-3)
-row.names(glioma2) = substr(row.names(glioma2),1,nchar(row.names(glioma2))-3)
-row.names(glioma3) = substr(row.names(glioma3),1,nchar(row.names(glioma3))-3)
-
-row.names(hepatoma1) = substr(row.names(hepatoma1),1,nchar(row.names(hepatoma1))-3)
-row.names(hepatoma2) = substr(row.names(hepatoma2),1,nchar(row.names(hepatoma2))-3)
-row.names(hepatoma3) = substr(row.names(hepatoma3),1,nchar(row.names(hepatoma3))-3)
-
-mart<- biomaRt::useMart(biomart = 'ensembl', dataset = 'hsapiens_gene_ensembl')
-
-# mapping example
-refseq_mapping <- biomaRt::getBM(attributes = c("refseq_mrna","hgnc_symbol"), 
-                        filters="refseq_mrna", # you swap out of this filter for whatever your input is
-                        values=row.names(df), # vector of your NMf
-                        mart=mart)
-
-refseq_mapping <- as.data.frame(refseq_mapping)
-names(refseq_mapping)[names(refseq_mapping) == "refseq_mrna"] <- "ID_REF"
-df$ID_REF <- row.names(df)
-df <- merge(df, refseq_mapping, by = "ID_REF")
-
-breast1$ID_REF <- row.names(breast1)
-breast1 <- merge(breast1, refseq_mapping, by = "ID_REF")
-breast2$ID_REF <- row.names(breast2)
-breast2 <- merge(breast2, refseq_mapping, by = "ID_REF")
-breast3$ID_REF <- row.names(breast3)
-breast3 <- merge(breast3, refseq_mapping, by = "ID_REF")
-
-glioma1$ID_REF <- row.names(glioma1)
-glioma1 <- merge(glioma1, refseq_mapping, by = "ID_REF")
-glioma2$ID_REF <- row.names(glioma2)
-glioma2 <- merge(glioma2, refseq_mapping, by = "ID_REF")
-glioma3$ID_REF <- row.names(glioma3)
-glioma3 <- merge(glioma3, refseq_mapping, by = "ID_REF")
-
-hepatoma1$ID_REF <- row.names(hepatoma1)
-hepatoma1 <- merge(hepatoma1, refseq_mapping, by = "ID_REF")
-hepatoma2$ID_REF <- row.names(hepatoma2)
-hepatoma2 <- merge(hepatoma2, refseq_mapping, by = "ID_REF")
-hepatoma3$ID_REF <- row.names(hepatoma3)
-hepatoma3 <- merge(hepatoma3, refseq_mapping, by = "ID_REF")
-```
-
-```{r}
-saveRDS(df, file = "../data/GSE18494.rds")
-#df <- readRDS("GSE47534.rds")
-```
-
-```{r}
-breast1 <- breast1[ which(breast1$hgnc_symbol=='HIF1A'
-                      | breast1$hgnc_symbol=='EP300'
-                      | breast1$hgnc_symbol=='VHL'
-                      | breast1$hgnc_symbol=='MDM2'
-                      | breast1$hgnc_symbol=='TP53'), ]
-breast1 <- unique( breast1[ , 2:ncol(breast1)] )
-
-breast2 <- breast2[ which(breast2$hgnc_symbol=='HIF1A'
-                      | breast2$hgnc_symbol=='EP300'
-                      | breast2$hgnc_symbol=='VHL'
-                      | breast2$hgnc_symbol=='MDM2'
-                      | breast2$hgnc_symbol=='TP53'), ]
-breast2 <- unique( breast2[ , 2:ncol(breast2)] )
-
-breast3 <- breast3[ which(breast3$hgnc_symbol=='HIF1A'
-                      | breast3$hgnc_symbol=='EP300'
-                      | breast3$hgnc_symbol=='VHL'
-                      | breast3$hgnc_symbol=='MDM2'
-                      | breast3$hgnc_symbol=='TP53'), ]
-breast3 <- unique( breast3[ , 2:ncol(breast3)] )
-
-glioma1 <- glioma1[ which(glioma1$hgnc_symbol=='HIF1A'
-                      | glioma1$hgnc_symbol=='EP300'
-                      | glioma1$hgnc_symbol=='VHL'
-                      | glioma1$hgnc_symbol=='MDM2'
-                      | glioma1$hgnc_symbol=='TP53'), ]
-glioma1 <- unique( glioma1[ , 2:ncol(glioma1)] )
-
-glioma2 <- glioma2[ which(glioma2$hgnc_symbol=='HIF1A'
-                      | glioma2$hgnc_symbol=='EP300'
-                      | glioma2$hgnc_symbol=='VHL'
-                      | glioma2$hgnc_symbol=='MDM2'
-                      | glioma2$hgnc_symbol=='TP53'), ]
-glioma2 <- unique( glioma2[ , 2:ncol(glioma2)] )
-
-glioma3 <- glioma3[ which(glioma3$hgnc_symbol=='HIF1A'
-                      | glioma3$hgnc_symbol=='EP300'
-                      | glioma3$hgnc_symbol=='VHL'
-                      | glioma3$hgnc_symbol=='MDM2'
-                      | glioma3$hgnc_symbol=='TP53'), ]
-glioma3 <- unique( glioma3[ , 2:ncol(glioma3)] )
-
-
-hepatoma1 <- hepatoma1[ which(hepatoma1$hgnc_symbol=='HIF1A'
-                      | hepatoma1$hgnc_symbol=='EP300'
-                      | hepatoma1$hgnc_symbol=='VHL'
-                      | hepatoma1$hgnc_symbol=='MDM2'
-                      | hepatoma1$hgnc_symbol=='TP53'), ]
-hepatoma1 <- unique( hepatoma1[ , 2:ncol(hepatoma1)] )
-
-hepatoma2 <- hepatoma2[ which(hepatoma2$hgnc_symbol=='HIF1A'
-                      | hepatoma2$hgnc_symbol=='EP300'
-                      | hepatoma2$hgnc_symbol=='VHL'
-                      | hepatoma2$hgnc_symbol=='MDM2'
-                      | hepatoma2$hgnc_symbol=='TP53'), ]
-hepatoma2 <- unique( hepatoma2[ , 2:ncol(hepatoma2)] )
-
-hepatoma3 <- hepatoma3[ which(hepatoma3$hgnc_symbol=='HIF1A'
-                      | hepatoma3$hgnc_symbol=='EP300'
-                      | hepatoma3$hgnc_symbol=='VHL'
-                      | hepatoma3$hgnc_symbol=='MDM2'
-                      | hepatoma3$hgnc_symbol=='TP53'), ]
-hepatoma3 <- unique( hepatoma3[ , 2:ncol(hepatoma3)] )
-```
-
-1559227_s_at	ENSG00000134086	VHL	von Hippel-Lindau tumor suppressor
-	
-201472_at	ENSG00000155959	VBP1	VHL binding protein 1
-
-203844_at	ENSG00000134086	VHL	von Hippel-Lindau tumor suppressor
-
-Não encontrei o VHL nesse dataset
-Possiveis aliases segundo gene cards -> PVHL, Von Hippel-Lindau Syndrome, Elongin Binding Protein, HRCA1, RCA1, VHLL
-
-HIF1A duplicado
-
-```{r}
-row.names(breast1) <- breast1$hgnc_symbol
-breast1 <- breast1[, -5]  
-bin <- binarizeTimeSeries(breast1, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(breast2) <- breast2$hgnc_symbol
-breast2 <- breast2[, -5]  
-bin <- binarizeTimeSeries(breast2, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(breast3) <- breast3$hgnc_symbol
-breast3 <- breast3[, -5]  
-bin <- binarizeTimeSeries(breast3, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(glioma1) <- glioma1$hgnc_symbol
-glioma1 <- glioma1[, -5]  
-bin <- binarizeTimeSeries(glioma1, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(glioma2) <- glioma2$hgnc_symbol
-glioma2 <- glioma2[, -5]  
-bin <- binarizeTimeSeries(glioma2, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(glioma3) <- glioma3$hgnc_symbol
-glioma3 <- glioma3[, -5]  
-bin <- binarizeTimeSeries(glioma3, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(hepatoma1) <- hepatoma1$hgnc_symbol
-hepatoma1 <- hepatoma1[, -5]  
-bin <- binarizeTimeSeries(hepatoma1, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(hepatoma2) <- hepatoma2$hgnc_symbol
-hepatoma2 <- hepatoma2[, -5]  
-bin <- binarizeTimeSeries(hepatoma2, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-row.names(hepatoma3) <- hepatoma3$hgnc_symbol
-hepatoma3 <- hepatoma3[, -5]  
-bin <- binarizeTimeSeries(hepatoma3, method="kmeans")$binarizedMeasurements
-bin = rbind(bin,c(1,0,0,0))
-row.names(bin)[5] <- "O2"
-net <- reconstructNetwork(bin, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-```
-
-```{r}
-# Reading data
-gse <- getGEO("GSE47534", destdir = "..", GSEMatrix = FALSE)
-gsmplatforms <- lapply(GSMList(gse),function(x) {Meta(x)$platform_id})
-gsmlist = Filter(function(gsm) {Meta(gsm)$platform_id=='GPL6884'},GSMList(gse))
-probesets <- Table(GPLList(gse)[[1]])$ID
-data.matrix <- do.call('cbind',lapply(gsmlist,function(x) 
-{tab <- Table(x)
-mymatch <- match(probesets,tab$ID_REF)
-return(tab$VALUE[mymatch])
-}))
-rownames(data.matrix) <- probesets
-df <- as.data.frame(data.matrix)
-```
-
-```{r}
+rm(package.check, packages_bioconductor, packages_cran)
 
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+# Integrated analysis of microRNA and mRNA expression and association with HIF binding in MCF-7 cells under hypoxia (GSE47533)
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+Camps C, Saini HK, Mole DR, Choudhry H et al. Integrated analysis of microRNA and mRNA expression and association with HIF binding reveals the complexity of microRNA expression regulation under hypoxia. Mol Cancer 2014 Feb 11;13:28. PMID: 24517586
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE47533
+
+
+```{r include=FALSE}
+load("../data/data.GSE47533.Rdata")
+```
+
+```{r  include=FALSE}
+# Selected genes from HIF Axis
+hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
+
+hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols]
+
+# Select the probes and genes
+expr.GSE47533.hif <- data.frame(expr.GSE47533) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% hif.probes) %>% 
+  merge(anno.GSE47533[anno.GSE47533$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) %>% 
+  arrange(symbol)
+  
+```
+
+```{r  include=FALSE}
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
+binNet <- function(b){
+  
+  cols <- data.GSE47533$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  rbind(., c("O2", 1,0,0,0)) %>% 
+    rename_at(vars(data.GSE47533$codes[cols] ),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2), ".",
+                    data.GSE47533$rep[cols])) %>% 
+  column_to_rownames("symbol")
+  
+}
+
+breast_MCF7.1 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 1]))  %>% 
+  binNet(.) 
+
+breast_MCF7.2 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 2]))  %>% 
+  binNet(.) 
+
+breast_MCF7.3 <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 3]))  %>% 
+  binNet(.) 
+
+```
+
+# Expression profiling of hypoxic HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells: time course (E-GEOD-18494)
+
+https://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-18494/   
+
+
+```{r include=FALSE}
+load("../data/data.EGEOD18494.Rdata")
+```
+
+
+```{r  include=FALSE}
+
+# Selecting genes from HIF Axis
+hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
+
+hif.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% hif.symbols]
+
+# Select the probes and genes
+expr.EGEOD18494.hif <- as.data.frame(expr.EGEOD18494) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% hif.probes) %>% 
+  merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) 
+  
+```
+
+
+```{r  include=FALSE}
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
+binNet <- function(b){
+  
+  cols <- data.EGEOD18494$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  rbind(., c("O2", 1,0,0,0)) %>% 
+    rename_at(vars(data.EGEOD18494$codes[cols] ),
+            ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>% 
+  column_to_rownames("symbol")
+  
+}
+
+cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
+
+breast_MDA.1 <- 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1])) %>% 
+  binNet(.) 
+
+breast_MDA.2 <- 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2])) %>% 
+  binNet(.) 
+
+breast_MDA.3 <- 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% 
+  binNet(.) 
+```
+
+
+# Hypoxia transcriptomic time-series data in three different cancer cell lines (GSE41491)
+
+Tumour hypoxia exhibits a highly dynamic spatial and temporal distribution and is associated with increased malignancy and poor prognosis.
+
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41491
+
+Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
+
+
+```{r  include=FALSE}
+load("../data/data.GSE41491.Rdata")
+```
+
+```{r  include=FALSE}
+# Selected genes from HIF Axis
+hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VBP1") 
+
+hif.probes <- unique(anno.GSE41491$probes[anno.GSE41491$symbol %in% hif.symbols])
+
+# Select the probes and genes
+expr.GSE41491.hif <- data.frame(expr.GSE41491) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% hif.probes) %>% 
+  merge(anno.GSE41491[anno.GSE41491$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) %>% 
+  arrange(symbol)
+
+expr.GSE41491.hif$symbol[expr.GSE41491.hif$symbol == "VBP1"] <- "VHL"
+  
+```
+
+```{r  include=FALSE}
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+
+binNet <- function(b){
+  
+  cols <- data.GSE41491$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  rbind(., c("O2", 1,0,0,0,0,0,0,0)) %>% 
+    rename_at(vars(data.GSE41491$codes[cols] ),
+            ~paste0(substr(data.GSE41491$condition[cols],1,2),".",
+                    data.GSE41491$time[cols],".",
+                    substr(data.GSE41491$cell_line[cols],1,2))) %>% 
+  column_to_rownames("symbol")
+  
+}
+
+breast_MCF7 <- 
+expr.GSE41491.hif %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"]))  %>% 
+  binNet(.) 
+
+```
+
+
+
+```{r  include=FALSE}
+
+# MDA-MB231 breast cancer- 4 time-points
+breast_MDA.1.net <- reconstructNetwork(breast_MDA.1, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
+breast_MDA.2.net <- reconstructNetwork(breast_MDA.2, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
+breast_MDA.3.net <- reconstructNetwork(breast_MDA.3, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
+
+breast_MDA.1.p <- plotNetworkWiring(breast_MDA.1.net, plotIt=F)
+breast_MDA.2.p <- plotNetworkWiring(breast_MDA.2.net, plotIt=F)
+breast_MDA.3.p <- plotNetworkWiring(breast_MDA.3.net, plotIt=F)
+
+# MCF7 breast cancer - 4 time-points
+breast_MCF7.1.net <- reconstructNetwork(breast_MCF7.1, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+breast_MCF7.2.net <- reconstructNetwork(breast_MCF7.2, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+breast_MCF7.3.net <- reconstructNetwork(breast_MCF7.3, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+breast_MCF7.1.p <- plotNetworkWiring(breast_MCF7.1.net, plotIt=F)
+breast_MCF7.2.p <- plotNetworkWiring(breast_MCF7.2.net, plotIt=F)
+breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
+
+# MCF7 breast cancer - 8 time-points
+breast_MCF7.net <- reconstructNetwork(breast_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+breast_MCF7.p <- plotNetworkWiring(breast_MCF7.net, plotIt=F)
+
+# All breast cancer nets merged:
+all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3, breast_MCF7, breast_MDA.1, breast_MDA.2, breast_MDA.3),
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+all.p <- plotNetworkWiring(all.nets, plotIt=F)
+
+
+```
+
+# Network inference:
+
+```{r fig.width=10}
+
+# MDA-MB231 breast cancer - 4 time-points
+par(mfrow = c(1,3))
+plot(breast_MDA.1.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 steps, replicate 1")
+plot(breast_MDA.2.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 steps, replicate 2")
+plot(breast_MDA.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 steps, replicate 3")
+
+# MCF7 breast cancer - 4 time-points 
+par(mfrow = c(1,3))
+plot(breast_MCF7.1.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, replicate 1")
+plot(breast_MCF7.2.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, replicate 2")
+plot(breast_MCF7.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, replicate 3")
+
+# MCF7 breast cancer - 8 time-points
+par(mfrow = c(1,3))
+plot(breast_MCF7.p, vertex.label.color="#440154ff",  vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 8 steps")
+
+# all samples breast cancer merged
+par(mfrow = c(1,1))
+plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="All breast cell-lines")
+```
+
+
