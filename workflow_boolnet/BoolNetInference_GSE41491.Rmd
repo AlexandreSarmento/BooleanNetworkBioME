@@ -6,6 +6,8 @@ output:
     df_print: paged
     html_preview: FALSE
     keep_html: FALSE
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })        
 ---
 
 ```{r error=TRUE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
@@ -31,7 +33,7 @@ https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41491
 
 
 ```{r message=FALSE, warning=FALSE}
-packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "effectsize")
 
 
 # Install and load packages
@@ -46,7 +48,7 @@ if(!require("hgu133plus2hsentrezg.db")){
   install.packages('http://mbni.org/customcdf/13.0.0/entrezg.download/hgu133plus2hsentrezg.db_13.0.0.tar.gz',repos=NULL) 
   }
 
-packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "ArrayExpress", "annotate")
+packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "annotate")
 
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
