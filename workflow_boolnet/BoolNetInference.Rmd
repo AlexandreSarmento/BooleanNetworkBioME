@@ -1,5 +1,5 @@
 ---
-title: "BoolNet Inference (E-GEOD-18494, GSE47533 and GSE41491)"
+title: "BoolNet Inference Breast Cancer Cell-lines (E-GEOD-18494, GSE47533 and GSE41491)"
 output:
   pdf_document: default
   github_document: 

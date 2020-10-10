@@ -74,7 +74,7 @@ plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.fra
 ![](figs/BoolNetInfer-unnamed-chunk-13-4.png)<!-- -->
 
 ``` r
-HIFaxis.net <- loadNetwork("boolean_network_HIFaxis.bn")
+HIFaxis.net <- loadNetwork("reduced_HIFaxis.bn")
 HIFaxis.p <- plotNetworkWiring(HIFaxis.net, plotIt=F)
 HIFaxis.net
 ```

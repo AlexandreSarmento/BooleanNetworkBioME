@@ -1,35 +1,24 @@
----
-title: "BoolNet Inference HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer (E-GEOD-18494)"
-output:
-  pdf_document: default
-  github_document: 
-    df_print: paged
-    html_preview: FALSE
-    keep_html: TRUE
-knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })    
----
-```{r error=TRUE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
-## This chunk automatically generates a text .R version of this script when running within knitr.
-input  = knitr::current_input()  # filename of input document
-output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
-try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
-# Avoid duplicate label error of knitr::purl
-options(knitr.duplicate.label = 'allow')
-# Code to browse the markdown file with renderized images.
-knitr::opts_chunk$set(
-  fig.path = "figs/EGEOD18494-"
-)
-```
+#' ---
+#' title: "BoolNet Inference HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer (E-GEOD-18494)"
+#' output:
+#'   pdf_document: default
+#'   github_document: 
+#'     df_print: paged
+#'     html_preview: FALSE
+#'     keep_html: TRUE
+#' knit: (function(inputFile, encoding) {
+#'   rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })    
+#' ---
 
-Expression profiling of hypoxic HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells: time course (E-GEOD-18494)
-
-Analysis of expression changes of cultured HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells subjected to hypoxia (0.5% O2) for 0, 4, 8, 12 hours . Results provide insight to cell type-specific response to hypoxia. HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells were collected under normoxic conditions (~19% O2, 0 hours) and after 4, 8 and 12 hours of hypoxia treatment (0.5% O2). For each cell line, three replicates of total RNA at each time point were prepared using Trizol and submitted to the DFCI Microarray Core for labeling, hybridization to Affymetrix HG-U133Plus2 oligonucleotide arrays and image scanning.
-    
-https://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-18494/   
-
-
-```{r message=FALSE, warning=FALSE}
+#' 
+#' Expression profiling of hypoxic HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells: time course (E-GEOD-18494)
+#' 
+#' Analysis of expression changes of cultured HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells subjected to hypoxia (0.5% O2) for 0, 4, 8, 12 hours . Results provide insight to cell type-specific response to hypoxia. HepG2 hepatoma, U87 glioma, and MDA-MB231 breast cancer cells were collected under normoxic conditions (~19% O2, 0 hours) and after 4, 8 and 12 hours of hypoxia treatment (0.5% O2). For each cell line, three replicates of total RNA at each time point were prepared using Trizol and submitted to the DFCI Microarray Core for labeling, hybridization to Affymetrix HG-U133Plus2 oligonucleotide arrays and image scanning.
+#'     
+#' https://www.ebi.ac.uk/arrayexpress/experiments/E-GEOD-18494/   
+#' 
+#' 
+## ----message=FALSE, warning=FALSE---------------------------------------------
 packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
 # Install and load packages
 package.check <- lapply(packages_cran, FUN = function(x) {
@@ -49,63 +38,63 @@ package.check <- lapply(packages_bioconductor, FUN = function(x) {
 
 rm(package.check, packages_bioconductor, packages_cran)
 
-```
 
-<!-- ```{r message=FALSE, warning=FALSE } -->
-<!-- download_dir <- fs::path(".data_tmp") -->
-<!-- if (!dir_exists(download_dir)) { -->
-<!--     dir_create(download_dir) -->
-<!--     EGEOD18494 <- ArrayExpress( "E-GEOD-18494", save=TRUE, path=download_dir) -->
-<!-- } else { -->
-<!--     EGEOD18494 <- ArrayExpress( "E-GEOD-18494", save=TRUE, path=download_dir) -->
-<!-- } -->
-
-<!-- data.EGEOD18494 <- Biobase::pData(EGEOD18494) -->
-
-<!-- data.EGEOD18494 <- data.frame( -->
-<!--                   codes = substr(data.EGEOD18494$Source.Name,1,9), -->
-<!--                   cell_line = data.EGEOD18494$Characteristics..cell.line., -->
-<!--                   time = data.EGEOD18494$Characteristics..time, -->
-<!--                   condition = data.EGEOD18494$Characteristics..stress. -->
-<!--                   ) -->
-<!-- data.EGEOD18494 <- data.EGEOD18494[order(data.EGEOD18494$codes),] -->
-<!-- data.EGEOD18494$rep <- rep(1:3, n= length(data.EGEOD18494$codes)) -->
-
-<!-- # Normalisation -->
-<!-- eset.EGEOD18494 <- oligo::rma(EGEOD18494,  normalize = TRUE) -->
-
-<!-- expr.EGEOD18494 <- exprs(eset.EGEOD18494) -->
-
-<!-- # Convert to a data.frame -->
-<!-- expr.EGEOD18494 <- as.data.frame(as.ffdf(expr.EGEOD18494)) -->
-
-<!-- colnames(expr.EGEOD18494) <- substr(colnames(expr.EGEOD18494),1,9) -->
-
-<!-- # Convert the probes to Symbol names -->
-<!-- anno.EGEOD18494 <- AnnotationDbi::select(hgu133plus2.db,  -->
-<!--                                          keys=rownames(expr.EGEOD18494),  -->
-<!--                                          columns=c("ENSEMBL", "SYMBOL", "GENENAME"),  -->
-<!--                                          keytype="PROBEID") -->
-
-<!-- colnames(anno.EGEOD18494) <- c("probes", "ensgene", "symbol", "description") -->
-
-<!-- rm(download_dir, EGEOD18494, eset.EGEOD18494) -->
-
-<!-- save.image("../data/data.EGEOD18494.Rdata") -->
-<!-- ``` -->
-
-# Load the pre-processed
-
-```{r}
+#' 
+#' <!-- ```{r message=FALSE, warning=FALSE } -->
+#' <!-- download_dir <- fs::path(".data_tmp") -->
+#' <!-- if (!dir_exists(download_dir)) { -->
+#' <!--     dir_create(download_dir) -->
+#' <!--     EGEOD18494 <- ArrayExpress( "E-GEOD-18494", save=TRUE, path=download_dir) -->
+#' <!-- } else { -->
+#' <!--     EGEOD18494 <- ArrayExpress( "E-GEOD-18494", save=TRUE, path=download_dir) -->
+#' <!-- } -->
+#' 
+#' <!-- data.EGEOD18494 <- Biobase::pData(EGEOD18494) -->
+#' 
+#' <!-- data.EGEOD18494 <- data.frame( -->
+#' <!--                   codes = substr(data.EGEOD18494$Source.Name,1,9), -->
+#' <!--                   cell_line = data.EGEOD18494$Characteristics..cell.line., -->
+#' <!--                   time = data.EGEOD18494$Characteristics..time, -->
+#' <!--                   condition = data.EGEOD18494$Characteristics..stress. -->
+#' <!--                   ) -->
+#' <!-- data.EGEOD18494 <- data.EGEOD18494[order(data.EGEOD18494$codes),] -->
+#' <!-- data.EGEOD18494$rep <- rep(1:3, n= length(data.EGEOD18494$codes)) -->
+#' 
+#' <!-- # Normalisation -->
+#' <!-- eset.EGEOD18494 <- oligo::rma(EGEOD18494,  normalize = TRUE) -->
+#' 
+#' <!-- expr.EGEOD18494 <- exprs(eset.EGEOD18494) -->
+#' 
+#' <!-- # Convert to a data.frame -->
+#' <!-- expr.EGEOD18494 <- as.data.frame(as.ffdf(expr.EGEOD18494)) -->
+#' 
+#' <!-- colnames(expr.EGEOD18494) <- substr(colnames(expr.EGEOD18494),1,9) -->
+#' 
+#' <!-- # Convert the probes to Symbol names -->
+#' <!-- anno.EGEOD18494 <- AnnotationDbi::select(hgu133plus2.db,  -->
+#' <!--                                          keys=rownames(expr.EGEOD18494),  -->
+#' <!--                                          columns=c("ENSEMBL", "SYMBOL", "GENENAME"),  -->
+#' <!--                                          keytype="PROBEID") -->
+#' 
+#' <!-- colnames(anno.EGEOD18494) <- c("probes", "ensgene", "symbol", "description") -->
+#' 
+#' <!-- rm(download_dir, EGEOD18494, eset.EGEOD18494) -->
+#' 
+#' <!-- save.image("../data/data.EGEOD18494.Rdata") -->
+#' <!-- ``` -->
+#' 
+#' # Load the pre-processed
+#' 
+## -----------------------------------------------------------------------------
 load("../data/data.EGEOD18494.Rdata")
 eset <- ExpressionSet(assayData = as.matrix(expr.EGEOD18494), 
                       probeNames = row.names(expr.EGEOD18494))
 expr.EGEOD18494 <- exprs(justvsn(eset))
-```
 
-# Selecting the HIF Genes 
-    
-```{r}
+#' 
+#' # Selecting the HIF Genes 
+#'     
+## -----------------------------------------------------------------------------
 
 # Selecting genes from HIF Axis
 hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
@@ -120,10 +109,10 @@ expr.EGEOD18494.hif <- as.data.frame(expr.EGEOD18494) %>%
   #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
   dplyr::select(!(probes)) 
   
-```
 
-
-```{r}
+#' 
+#' 
+## -----------------------------------------------------------------------------
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
 
 binNet <- function(b){
@@ -144,11 +133,11 @@ binNet <- function(b){
   
 }
 
-```
 
-# Exemplifying the Binarization 
-
-```{r}
+#' 
+#' # Exemplifying the Binarization 
+#' 
+## -----------------------------------------------------------------------------
 
 cols <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" & data.EGEOD18494$rep == 1)
 
@@ -176,11 +165,11 @@ binarizeTimeSeries(breast1x[,-1], method="kmeans")$binarizedMeasurements  %>%
   rbind(., c("O2", 1,0,0,0)) %>% 
   knitr::kable(.)
 
-```
 
-# MDA-MB231 breast cancer
-
-```{r}
+#' 
+#' # MDA-MB231 breast cancer
+#' 
+## -----------------------------------------------------------------------------
 cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
 cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
 cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
@@ -202,11 +191,11 @@ expr.EGEOD18494.hif %>%
   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% binNet(.) 
 
 breast3x %>% knitr::kable(.)
-```
 
-# HepG2 hepatoma
-
-```{r}
+#' 
+#' # HepG2 hepatoma
+#' 
+## -----------------------------------------------------------------------------
 
 cellline.rep1 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 1)
 cellline.rep2 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 2)
@@ -236,11 +225,11 @@ expr.EGEOD18494.hif %>%
 hepatoma3x %>% 
   knitr::kable(.)
 
-```
 
-# U87 glioma
-
-```{r}
+#' 
+#' # U87 glioma
+#' 
+## -----------------------------------------------------------------------------
 cellline.rep1 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 1)
 cellline.rep2 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 2)
 cellline.rep3 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 3)
@@ -269,10 +258,10 @@ expr.EGEOD18494.hif %>%
 glioma3x %>% 
   knitr::kable(.)
 
-```
 
-
-```{r  include=FALSE}
+#' 
+#' 
+## ----include=FALSE------------------------------------------------------------
 breast1x.net <- reconstructNetwork(breast1x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 breast2x.net <- reconstructNetwork(breast2x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
 breast3x.net <- reconstructNetwork(breast3x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE)
@@ -311,11 +300,11 @@ hepatoma.all.p <- plotNetworkWiring(hepatoma.all, plotIt=F)
 glioma.all <- reconstructNetwork(list(glioma1x, glioma2x, glioma3x),
                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 glioma.all.p <- plotNetworkWiring(glioma.all, plotIt=F)
-```
 
-# Network inference:
-
-```{r }
+#' 
+#' # Network inference:
+#' 
+## -----------------------------------------------------------------------------
 
 # MDA-MB231 breast cancer - 4 time-points
 par(mfrow = c(1,3))
@@ -355,3 +344,4 @@ plot(glioma3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", verte
 par(mfrow = c(1,1))
 plot(glioma.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
      main="U87 glioma\n 4 steps, replicate 3")
+

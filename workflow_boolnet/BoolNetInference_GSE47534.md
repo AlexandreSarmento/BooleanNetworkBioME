@@ -1,4 +1,4 @@
-BoolNet Inference (GSE47533)
+BoolNet Inference MCF-7 breast (GSE47533)
 ================
 
 Integrated analysis of microRNA and mRNA expression and association with
@@ -13,19 +13,14 @@ Cancer 2014 Feb 11;13:28. PMID: 24517586
 
 This SuperSeries is composed of the following SubSeries:
 
-GSE47532 MCF-7 cells under hypoxia \[miRNA\] - GPL8227 Agilent-019118
-Human miRNA Microarray 2.0 G4470B - Samples (11) - 822 miRNA
+GSE47532 MCF-7 cells under hypoxia \[miRNA\] - Samples (11) - 822 miRNA
 
-GSE47533 MCF-7 cells under hypoxia \[mRNA\] - GPL6884 Illumina HumanWG-6
-v3.0 expression beadchip - Samples (12)
+GSE47533 MCF-7 cells under hypoxia \[mRNA\] - GPL6884 - Samples (12)
 
-GSE47602 MCF-7 cells under hypoxia (miRNA-Seq) - GPL11154 Illumina HiSeq
-2000 (Homo sapiens) - Samples (8) - Don’t exist
+GSE47602 MCF-7 cells under hypoxia (miRNA-Seq) - Samples (8) - missing
 
 ``` r
-packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff")
-
-
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs", "ff", "effectsize")
 # Install and load packages
 package.check <- lapply(packages_cran, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
@@ -33,12 +28,9 @@ package.check <- lapply(packages_cran, FUN = function(x) {
     library(x, character.only = TRUE)
   }
 })
-
 # For oligo and ArrayExpress First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
-
-packages_bioconductor = c("Biobase", "GEOquery", "oligo", "ArrayExpress", "hgu133plus2.db", "preprocessCore")
-
+packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "ArrayExpress", "illuminaHumanv3.db")
 # Install and load packages
 package.check <- lapply(packages_bioconductor, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
@@ -46,104 +38,95 @@ package.check <- lapply(packages_bioconductor, FUN = function(x) {
     library(x, character.only = TRUE)
   }
 })
-
 rm(package.check, packages_bioconductor, packages_cran)
 ```
 
-``` r
-download_dir <- fs::path(".data_tmp")
-if (!dir_exists(download_dir)) { dir_create(download_dir) }  
+<!-- ```{r} -->
 
-GSE47533 <-getGEO("GSE47533", destdir = download_dir, GSEMatrix = T)
-```
+<!-- download_dir <- fs::path(".data_tmp") -->
 
-    ## Found 1 file(s)
+<!-- if (!dir_exists(download_dir)) { dir_create(download_dir) } -->
 
-    ## GSE47533_series_matrix.txt.gz
+<!-- if (!dir_exists(".data_tmp/GSE47533_series_matrix.txt.gz")) { -->
 
-    ## Using locally cached version: .data_tmp/GSE47533_series_matrix.txt.gz
+<!--   GSE47533 <-getGEO("GSE47533", destdir = download_dir, GSEMatrix = T) -->
 
-    ## 
-    ## ── Column specification ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    ## cols(
-    ##   ID_REF = col_character(),
-    ##   GSM1151682 = col_double(),
-    ##   GSM1151683 = col_double(),
-    ##   GSM1151684 = col_double(),
-    ##   GSM1151685 = col_double(),
-    ##   GSM1151686 = col_double(),
-    ##   GSM1151687 = col_double(),
-    ##   GSM1151688 = col_double(),
-    ##   GSM1151689 = col_double(),
-    ##   GSM1151690 = col_double(),
-    ##   GSM1151691 = col_double(),
-    ##   GSM1151692 = col_double(),
-    ##   GSM1151693 = col_double()
-    ## )
+<!--   } else{ -->
 
-    ## Using locally cached version of GPL6884 found here:
-    ## .data_tmp/GPL6884.soft
+<!--   GSE47533 <-getGEO(filename=".data_tmp/GSE47533_series_matrix.txt.gz") -->
 
-``` r
-expr.GSE47533 <- exprs(GSE47533[[1]])
-prob.GSE47533 <- unique(rownames(expr.GSE47533))
-data.GSE47533 <- pData(GSE47533[[1]])
+<!-- } -->
 
-data.GSE47533 <- data.frame(
-                  codes = as.character(data.GSE47533$geo_accession),
-                  cell_line = "MCF7",
-                  time = data.GSE47533$`time of exposure:ch1`,
-                  condition = substr(as.character(data.GSE47533$description), 1, 4),
-                  rep = data.GSE47533$description.1)
+<!-- # Normalisation: the data is already normalised -->
 
-data.GSE47533 <- data.GSE47533 %>%
-  mutate(rep = recode(rep, "replicate 1" = 1,
-                           "replicate 2" = 2,
-                           "replicate 3" = 3)) 
+<!-- expr.GSE47533 <- as.matrix(exprs(normalize.ExpressionSet.quantiles(GSE47533[[1]]))) -->
 
-data.GSE47533$time <- as.character(data.GSE47533$time)
-data.GSE47533$time[data.GSE47533$condition == "Norm"] <- ''
+<!-- prob.GSE47533 <- unique(rownames(expr.GSE47533)) -->
 
+<!-- data.GSE47533 <- pData(GSE47533[[1]]) -->
 
-# Convert the probes to Symbol names
+<!-- data.GSE47533 <- data.frame( -->
 
-#  load/install the package
-if(!require("illuminaHumanv3.db")) BiocManager::install("illuminaHumanv3.db")
-```
+<!--                   codes = as.character(data.GSE47533$geo_accession), -->
 
-    ## Loading required package: illuminaHumanv3.db
+<!--                   cell_line = "MCF7", -->
 
-    ## 
+<!--                   time = data.GSE47533$`time of exposure:ch1`, -->
 
-``` r
-# The below function call will return a datafram with probe_id, gene symbol
-# and ŕefgene_id for your data
+<!--                   condition = substr(as.character(data.GSE47533$description), 1, 4), -->
 
-anno.GSE47533 <- AnnotationDbi::select(illuminaHumanv3.db, 
-       keys = prob.GSE47533, 
-       columns=c("ENSEMBL", "SYMBOL", "GENENAME"), 
-       keytype="PROBEID")
-```
+<!--                   rep = data.GSE47533$description.1) -->
 
-    ## 'select()' returned 1:many mapping between keys and columns
+<!-- data.GSE47533 <- data.GSE47533 %>% -->
+
+<!--   mutate(rep = recode(rep, "replicate 1" = 1, -->
+
+<!--                            "replicate 2" = 2, -->
+
+<!--                            "replicate 3" = 3)) %>% -->
+
+<!--   mutate_at(vars(time), as.character)  %>% -->
+
+<!--   mutate(time = ifelse(condition == "Norm", 0, time)) -->
+
+<!-- # Convert the probes to Symbol names -->
+
+<!-- # The below function call will return a datafram with probe_id, gene symbol -->
+
+<!-- # and ŕefgene_id for your data -->
+
+<!-- anno.GSE47533 <- AnnotationDbi::select(illuminaHumanv3.db, -->
+
+<!--        keys = prob.GSE47533, -->
+
+<!--        columns=c("ENSEMBL", "SYMBOL", "GENENAME"), -->
+
+<!--        keytype="PROBEID") -->
+
+<!-- colnames(anno.GSE47533) <- c("probes", "ensgene", "symbol", "description") -->
+
+<!-- rm(download_dir, GSE47533,  prob.GSE47533) -->
+
+<!-- save.image("../data/data.GSE47533.Rdata") -->
+
+<!-- ``` -->
+
+# Load the pre-processed data
 
 ``` r
-colnames(anno.GSE47533) <- c("probes", "ensgene", "symbol", "description")
-
-rm(download_dir, GSE47533,  prob.GSE47533)
+load("../data/data.GSE47533.Rdata")
+cols <- colnames(expr.GSE47533)
+rows <- rownames(expr.GSE47533)
+expr.GSE47533 <- as.data.frame(matrix(effectsize::normalize(as.matrix(expr.GSE47533)), ncol = length(cols), nrow = length(rows) ))
+colnames(expr.GSE47533) <- cols
+rownames(expr.GSE47533) <- rows 
 ```
 
 # Selecting the HIF Genes
 
 ``` r
-# Genes from Boolean Network:    
-# HIF1a, HIF2a, p53, BNIP3, VEGF, cMyc, Oct4, cdc20, cycA, cycB, cycE, cycD, p27, Rb, E2F, cdh1, mdm2, BAD, BclX
-
-# hif.symbols <- c("HIF1A", "HIF1", "PASD8", "MOP1", "EPAS1", "HIF2A", "HLF", "PASD2", "MOP2", "VEGFA", "VPF", "MVCD1", "VEGF-A", "TP53", "P53", "MYC", "C-Myc", "POU5F1", "OCT3", "OTF3", "CDC20", "P55CDC", "CDC20A", "CCNA1", "CCNA1", "CCNA2", "CCN1", "CCNA", "CCNB1", "CCNB", "CCNB1", "CCNB2", "CCNB2", "HsT17299", "CCND1", "PRAD1", "CCND2", "MPPH3", "CCNE1", "CCNE1", "CCNE", "PCCNE1", "CCNE2", "CCNE2", "CCNE", "PCCNE1", "CDKN1B", "KIP1", "P27KIP1", "CDKN4MEN4", "RB1", "PPP1R130", "Pp110", "E2F1", "RBAP-1", "BNIP3", "NIP3", "BCL2", "MCL1", "BCL2L3", "CDH1", "CD324", "UBE2C", "BAD", "BCL2L8", "VHL", "PVHL", "VHL1", "MDM2", "HDM2", "EP300", "P300", "KAT3B")
-
 # Selected genes from HIF Axis
 hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VHL")
-
 hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols]
 
 # Select the probes and genes
@@ -154,72 +137,63 @@ expr.GSE47533.hif <- data.frame(expr.GSE47533) %>%
   #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
   dplyr::select(!(probes)) %>% 
   arrange(symbol)
-  
-
-# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
-binNet <- function(b){
-  binarizeTimeSeries(b[,-5], method="kmeans")$binarizedMeasurements  %>% 
-  data.frame(.)  %>% 
-  aggregate(., list(symbol = b$symbol), mean) %>% 
-  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
-  rbind(., c("O2", 1,0,0,0)) %>% 
-    rename_at(vars(data.GSE47533$codes[data.GSE47533$codes %in% names(b)]),
-            ~paste0(data.GSE47533$condition[data.GSE47533$codes %in% names(b)],".",
-                    data.GSE47533$time[data.GSE47533$codes %in% names(b)],".",
-                    data.GSE47533$rep[data.GSE47533$codes %in% names(b)])) %>% 
-  column_to_rownames("symbol")
-}
 ```
 
+# Example of Binarizing
+
 ``` r
+cols <- (data.GSE47533$rep == 1)
 breast1_MCF7 <- 
 expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol")) %>% arrange(symbol)
+  dplyr::select(c("symbol", data.GSE47533$codes[cols])) %>% arrange(symbol) %>% 
+  arrange(symbol) %>% 
+  rename_at(vars(data.GSE47533$codes[cols]),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2)))
 
-names(breast1_MCF7) <- c("Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1", "symbol")
-
-knitr::kable(breast1_MCF7[, c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1")])
+knitr::kable(breast1_MCF7)
 ```
 
-| symbol |   Norm..1 | Hypo.16h.1 | Hypo.32h.1 | Hypo.48h.1 |
-| :----- | --------: | ---------: | ---------: | ---------: |
-| EP300  |  9.038936 |   9.183945 |   8.945772 |   8.979497 |
-| HIF1A  |  8.583756 |   7.783518 |   8.148891 |   8.482742 |
-| HIF1A  |  9.643793 |   9.077734 |   9.313412 |   9.673450 |
-| HIF1A  |  8.535129 |   7.744851 |   8.328545 |   8.302191 |
-| MDM2   |  7.601032 |   7.904100 |   7.560669 |   8.099927 |
-| MDM2   |  6.331443 |   6.243023 |   6.335099 |   6.310119 |
-| MDM2   |  6.100215 |   6.011316 |   6.099801 |   6.151320 |
-| TP53   |  9.443995 |   9.725640 |   9.315033 |   9.458588 |
-| VHL    |  8.048573 |   7.725032 |   8.081774 |   8.949112 |
-| VHL    | 11.624437 |  11.475865 |  11.251867 |  11.560166 |
-| VHL    |  9.742655 |   9.596538 |   9.390603 |   9.157433 |
-| VHL    |  9.501160 |   8.869732 |   9.394971 |   9.211784 |
+| symbol |   No.0.MC | Hy.16h.MC | Hy.32h.MC | Hy.48h.MC |
+| :----- | --------: | --------: | --------: | --------: |
+| EP300  | 0.3905888 | 0.4059010 | 0.3807511 | 0.3843123 |
+| HIF1A  | 0.3425241 | 0.2580229 | 0.2966044 | 0.3318575 |
+| HIF1A  | 0.4544587 | 0.3946856 | 0.4195721 | 0.4575903 |
+| HIF1A  | 0.3373892 | 0.2539398 | 0.3155750 | 0.3127921 |
+| MDM2   | 0.2387532 | 0.2707557 | 0.2344911 | 0.2914341 |
+| MDM2   | 0.1046909 | 0.0953542 | 0.1050768 | 0.1024391 |
+| MDM2   | 0.0802744 | 0.0708871 | 0.0802306 | 0.0856708 |
+| TP53   | 0.4333610 | 0.4631014 | 0.4197433 | 0.4349020 |
+| VHL    | 0.2860114 | 0.2518470 | 0.2895173 | 0.3811038 |
+| VHL    | 0.6636049 | 0.6479165 | 0.6242634 | 0.6568183 |
+| VHL    | 0.4648981 | 0.4494688 | 0.4277231 | 0.4031015 |
+| VHL    | 0.4393973 | 0.3727216 | 0.4281843 | 0.4088407 |
 
 ``` r
-binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
-  add_column(symbol = breast1_MCF7$symbol) %>%   dplyr::select(c("symbol", "Norm..1","Hypo.16h.1","Hypo.32h.1","Hypo.48h.1"))  %>% 
+  add_column(symbol = breast1_MCF7$symbol, .before=0) %>% 
   knitr::kable(.)
 ```
 
-| symbol | Norm..1 | Hypo.16h.1 | Hypo.32h.1 | Hypo.48h.1 |
-| :----- | ------: | ---------: | ---------: | ---------: |
-| EP300  |       0 |          1 |          0 |          0 |
-| HIF1A  |       1 |          0 |          0 |          1 |
-| HIF1A  |       1 |          0 |          0 |          1 |
-| HIF1A  |       1 |          0 |          1 |          1 |
-| MDM2   |       0 |          1 |          0 |          1 |
-| MDM2   |       1 |          0 |          1 |          1 |
-| MDM2   |       1 |          0 |          1 |          1 |
-| TP53   |       0 |          1 |          0 |          0 |
-| VHL    |       0 |          0 |          0 |          1 |
-| VHL    |       1 |          1 |          0 |          1 |
-| VHL    |       1 |          1 |          0 |          0 |
-| VHL    |       1 |          0 |          1 |          1 |
+| symbol | No.0.MC | Hy.16h.MC | Hy.32h.MC | Hy.48h.MC |
+| :----- | ------: | --------: | --------: | --------: |
+| EP300  |       0 |         1 |         0 |         0 |
+| HIF1A  |       1 |         0 |         0 |         1 |
+| HIF1A  |       1 |         0 |         0 |         1 |
+| HIF1A  |       1 |         0 |         1 |         1 |
+| MDM2   |       0 |         1 |         0 |         1 |
+| MDM2   |       1 |         0 |         1 |         1 |
+| MDM2   |       1 |         0 |         1 |         1 |
+| TP53   |       0 |         1 |         0 |         0 |
+| VHL    |       0 |         0 |         0 |         1 |
+| VHL    |       1 |         1 |         0 |         1 |
+| VHL    |       1 |         1 |         0 |         0 |
+| VHL    |       1 |         0 |         1 |         1 |
 
 ``` r
-binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>% 
+binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>% 
   data.frame(.)  %>% 
   aggregate(., list(symbol = breast1_MCF7$symbol), mean) %>% 
   mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
@@ -227,93 +201,188 @@ binarizeTimeSeries(breast1_MCF7[,-5], method="kmeans")$binarizedMeasurements  %>
   knitr::kable(.)
 ```
 
-    ## Warning: `funs()` is deprecated as of dplyr 0.8.0.
-    ## Please use a list of either functions or lambdas: 
-    ## 
-    ##   # Simple named list: 
-    ##   list(mean = mean, median = median)
-    ## 
-    ##   # Auto named with `tibble::lst()`: 
-    ##   tibble::lst(mean, median)
-    ## 
-    ##   # Using lambdas
-    ##   list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
-    ## This warning is displayed once every 8 hours.
-    ## Call `lifecycle::last_warnings()` to see where this warning was generated.
-
-| symbol | Norm..1 | Hypo.16h.1 | Hypo.32h.1 | Hypo.48h.1 |
-| :----- | :------ | :--------- | :--------- | :--------- |
-| EP300  | 0       | 1          | 0          | 0          |
-| HIF1A  | 1       | 0          | 0          | 1          |
-| MDM2   | 1       | 0          | 1          | 1          |
-| TP53   | 0       | 1          | 0          | 0          |
-| VHL    | 1       | 1          | 0          | 1          |
-| O2     | 1       | 0          | 0          | 0          |
-
-# MDA-MB231 breast cancer
+| symbol | No.0.MC | Hy.16h.MC | Hy.32h.MC | Hy.48h.MC |
+| :----- | :------ | :-------- | :-------- | :-------- |
+| EP300  | 0       | 1         | 0         | 0         |
+| HIF1A  | 1       | 0         | 0         | 1         |
+| MDM2   | 1       | 0         | 1         | 1         |
+| TP53   | 0       | 1         | 0         | 0         |
+| VHL    | 1       | 1         | 0         | 1         |
+| O2     | 1       | 0         | 0         | 0         |
 
 ``` r
-breast1_MCF7 <- 
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+binNet <- function(b){
+  
+  cols <- data.GSE47533$codes %in% names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  rbind(., c("O2", 1,0,0,0)) %>% 
+    rename_at(vars(data.GSE47533$codes[cols] ),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2), ".",
+                    data.GSE47533$rep[cols])) %>% 
+  column_to_rownames("symbol")
+  
+}
+
+breast_MCF7.1 <- 
 expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 1], "symbol"))  %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 1]))  %>% 
   binNet(.) 
-knitr::kable(breast1_MCF7)
-```
 
-|       | Norm..1 | Hypo.16h.1 | Hypo.32h.1 | Hypo.48h.1 |
-| :---- | :------ | :--------- | :--------- | :--------- |
-| EP300 | 0       | 1          | 0          | 0          |
-| HIF1A | 1       | 0          | 0          | 1          |
-| MDM2  | 1       | 0          | 1          | 1          |
-| TP53  | 0       | 1          | 0          | 0          |
-| VHL   | 1       | 1          | 0          | 1          |
-| O2    | 1       | 0          | 0          | 0          |
-
-``` r
-breast2_MCF7 <- 
+breast_MCF7.2 <- 
 expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 2], "symbol"))  %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 2]))  %>% 
   binNet(.) 
-knitr::kable(breast2_MCF7)
-```
 
-|       | Norm..2 | Hypo.16h.2 | Hypo.32h.2 | Hypo.48h.2 |
-| :---- | :------ | :--------- | :--------- | :--------- |
-| EP300 | 0       | 0          | 1          | 0          |
-| HIF1A | 1       | 0          | 0          | 1          |
-| MDM2  | 0       | 1          | 0          | 0          |
-| TP53  | 1       | 1          | 0          | 0          |
-| VHL   | 1       | 0          | 0          | 1          |
-| O2    | 1       | 0          | 0          | 0          |
-
-``` r
-breast3_MCF7 <- 
+breast_MCF7.3 <- 
 expr.GSE47533.hif %>% 
-  dplyr::select(c(data.GSE47533$codes[data.GSE47533$rep == 3], "symbol"))  %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 3]))  %>% 
   binNet(.) 
-knitr::kable(breast3_MCF7)
-```
 
-|       | Norm..3 | Hypo.16h.3 | Hypo.32h.3 | Hypo.48h.3 |
-| :---- | :------ | :--------- | :--------- | :--------- |
-| EP300 | 0       | 0          | 1          | 0          |
-| HIF1A | 1       | 0          | 0          | 1          |
-| MDM2  | 0       | 0          | 0          | 1          |
-| TP53  | 1       | 1          | 1          | 0          |
-| VHL   | 1       | 0          | 0          | 1          |
-| O2    | 1       | 0          | 0          | 0          |
-
-``` r
 # All breast cancer nets merged:
+all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3),
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
-net <- reconstructNetwork(list(breast1_MCF7, breast2_MCF7, breast3_MCF7), method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
+all.p <- plotNetworkWiring(all.nets, plotIt=F)
 ```
 
-![](figs/GSE47533-unnamed-chunk-6-1.png)<!-- -->
+# MCF7 breast cancer
 
 ``` r
-print(net)
+# MCF7 breast cancer - 4 time-points
+breast_MCF7.1.net <- reconstructNetwork(breast_MCF7.1, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+breast_MCF7.2.net <- reconstructNetwork(breast_MCF7.2, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+breast_MCF7.3.net <- reconstructNetwork(breast_MCF7.3, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+breast_MCF7.1.p <- plotNetworkWiring(breast_MCF7.1.net, plotIt=F)
+breast_MCF7.2.p <- plotNetworkWiring(breast_MCF7.2.net, plotIt=F)
+breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
+```
+
+``` r
+# MCF7 breast - 4 steps, replicate 1
+print(breast_MCF7.1.net)
+```
+
+    ## Probabilistic Boolean network with 6 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL O2
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (O2) ( probability: 0.5, error: 0)
+    ## EP300 = (HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (!VHL) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (!O2) ( probability: 0.5, error: 0)
+    ## MDM2 = (!HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (O2) ( probability: 0.5, error: 0)
+    ## TP53 = (HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (!TP53) ( probability: 0.3333333, error: 0)
+    ## VHL = (MDM2) ( probability: 0.3333333, error: 0)
+    ## VHL = (!EP300) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Alternative transition functions for gene O2:
+    ## O2 = 0 ( probability: 1, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## O2 = 0
+
+``` r
+# MCF7 breast - 4 steps, replicate 2
+print(breast_MCF7.2.net)
+```
+
+    ## Probabilistic Boolean network with 6 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL O2
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (MDM2) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (!TP53) ( probability: 0.5, error: 0)
+    ## HIF1A = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (O2) ( probability: 0.3333333, error: 0)
+    ## MDM2 = (VHL) ( probability: 0.3333333, error: 0)
+    ## MDM2 = (HIF1A) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (O2) ( probability: 0.3333333, error: 0)
+    ## TP53 = (VHL) ( probability: 0.3333333, error: 0)
+    ## TP53 = (HIF1A) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (!TP53) ( probability: 0.5, error: 0)
+    ## VHL = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene O2:
+    ## O2 = 0 ( probability: 1, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## O2 = 0
+
+``` r
+# MCF7 breast - 4 steps, replicate 3
+print(breast_MCF7.3.net)
+```
+
+    ## Probabilistic Boolean network with 6 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL O2
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (!EP300 & !O2) ( probability: 0.1666667, error: 0)
+    ## EP300 = (!EP300 & !O2) | (EP300 & O2) ( probability: 0.1666667, error: 0)
+    ## EP300 = (!EP300 & !VHL) ( probability: 0.1666667, error: 0)
+    ## EP300 = (!EP300 & !VHL) | (EP300 & VHL) ( probability: 0.1666667, error: 0)
+    ## EP300 = (!EP300 & !HIF1A) ( probability: 0.1666667, error: 0)
+    ## EP300 = (!EP300 & !HIF1A) | (EP300 & HIF1A) ( probability: 0.1666667, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (EP300) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (EP300) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (!EP300) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (EP300) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene O2:
+    ## O2 = 0 ( probability: 1, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## O2 = 0
+
+``` r
+# MCF7 breast - 4 steps, all replicates
+print(all.nets)
 ```
 
     ## Probabilistic Boolean network with 6 genes
@@ -394,136 +463,22 @@ print(net)
     ## O2 = 0
 
 ``` r
-# Individual nets of each replica:
-
-net <- reconstructNetwork(breast1_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
+# MCF7 breast cancer - 4 time-points 
+par(mfrow = c(1,3))
+plot(breast_MCF7.1.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, replicate 1")
+plot(breast_MCF7.2.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, replicate 2")
+plot(breast_MCF7.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, replicate 3")
 ```
 
-![](figs/GSE47533-unnamed-chunk-6-2.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
-print(net)
+par(mfrow = c(1,1))
+plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 steps, all replicates")
 ```
 
-    ## Probabilistic Boolean network with 6 genes
-    ## 
-    ## Involved genes:
-    ## EP300 HIF1A MDM2 TP53 VHL O2
-    ## 
-    ## Transition functions:
-    ## 
-    ## Alternative transition functions for gene EP300:
-    ## EP300 = (O2) ( probability: 0.5, error: 0)
-    ## EP300 = (HIF1A) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (!VHL) ( probability: 1, error: 0)
-    ## 
-    ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (!O2) ( probability: 0.5, error: 0)
-    ## MDM2 = (!HIF1A) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene TP53:
-    ## TP53 = (O2) ( probability: 0.5, error: 0)
-    ## TP53 = (HIF1A) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene VHL:
-    ## VHL = (!TP53) ( probability: 0.3333333, error: 0)
-    ## VHL = (MDM2) ( probability: 0.3333333, error: 0)
-    ## VHL = (!EP300) ( probability: 0.3333333, error: 0)
-    ## 
-    ## Alternative transition functions for gene O2:
-    ## O2 = 0 ( probability: 1, error: 0)
-    ## 
-    ## Knocked-out and over-expressed genes:
-    ## O2 = 0
-
-``` r
-net <- reconstructNetwork(breast2_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-```
-
-![](figs/GSE47533-unnamed-chunk-6-3.png)<!-- -->
-
-``` r
-print(net)
-```
-
-    ## Probabilistic Boolean network with 6 genes
-    ## 
-    ## Involved genes:
-    ## EP300 HIF1A MDM2 TP53 VHL O2
-    ## 
-    ## Transition functions:
-    ## 
-    ## Alternative transition functions for gene EP300:
-    ## EP300 = (MDM2) ( probability: 1, error: 0)
-    ## 
-    ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (!TP53) ( probability: 0.5, error: 0)
-    ## HIF1A = (EP300) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (O2) ( probability: 0.3333333, error: 0)
-    ## MDM2 = (VHL) ( probability: 0.3333333, error: 0)
-    ## MDM2 = (HIF1A) ( probability: 0.3333333, error: 0)
-    ## 
-    ## Alternative transition functions for gene TP53:
-    ## TP53 = (O2) ( probability: 0.3333333, error: 0)
-    ## TP53 = (VHL) ( probability: 0.3333333, error: 0)
-    ## TP53 = (HIF1A) ( probability: 0.3333333, error: 0)
-    ## 
-    ## Alternative transition functions for gene VHL:
-    ## VHL = (!TP53) ( probability: 0.5, error: 0)
-    ## VHL = (EP300) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene O2:
-    ## O2 = 0 ( probability: 1, error: 0)
-    ## 
-    ## Knocked-out and over-expressed genes:
-    ## O2 = 0
-
-``` r
-net <- reconstructNetwork(breast3_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-```
-
-![](figs/GSE47533-unnamed-chunk-6-4.png)<!-- -->
-
-``` r
-print(net)
-```
-
-    ## Probabilistic Boolean network with 6 genes
-    ## 
-    ## Involved genes:
-    ## EP300 HIF1A MDM2 TP53 VHL O2
-    ## 
-    ## Transition functions:
-    ## 
-    ## Alternative transition functions for gene EP300:
-    ## EP300 = (!EP300 & !O2) ( probability: 0.1666667, error: 0)
-    ## EP300 = (!EP300 & !O2) | (EP300 & O2) ( probability: 0.1666667, error: 0)
-    ## EP300 = (!EP300 & !VHL) ( probability: 0.1666667, error: 0)
-    ## EP300 = (!EP300 & !VHL) | (EP300 & VHL) ( probability: 0.1666667, error: 0)
-    ## EP300 = (!EP300 & !HIF1A) ( probability: 0.1666667, error: 0)
-    ## EP300 = (!EP300 & !HIF1A) | (EP300 & HIF1A) ( probability: 0.1666667, error: 0)
-    ## 
-    ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (EP300) ( probability: 1, error: 0)
-    ## 
-    ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (EP300) ( probability: 1, error: 0)
-    ## 
-    ## Alternative transition functions for gene TP53:
-    ## TP53 = (!EP300) ( probability: 1, error: 0)
-    ## 
-    ## Alternative transition functions for gene VHL:
-    ## VHL = (EP300) ( probability: 1, error: 0)
-    ## 
-    ## Alternative transition functions for gene O2:
-    ## O2 = 0 ( probability: 1, error: 0)
-    ## 
-    ## Knocked-out and over-expressed genes:
-    ## O2 = 0
+![](figs/GSE47533-unnamed-chunk-10-1.png)<!-- -->

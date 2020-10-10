@@ -2,18 +2,17 @@
 title: "BoolNet Inference  (GSE41491)"
 output:
   pdf_document: default
-  html_notebook: default
   github_document: 
     df_print: paged
     html_preview: FALSE
-    keep_html: TRUE
+    keep_html: FALSE
 ---
 
 ```{r error=TRUE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
 ## This chunk automatically generates a text .R version of this script when running within knitr.
-input  = knitr::current_input()  # filename of input document
-output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
-try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
+# input  = knitr::current_input()  # filename of input document
+# output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
+# try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
 # Avoid duplicate label error of knitr::purl
 options(knitr.duplicate.label = 'allow')
 # Code to browse the markdown file with renderized images.
@@ -24,14 +23,12 @@ knitr::opts_chunk$set(
 
 Hypoxia transcriptomic time-series data in three different cancer cell lines (GSE41491)
 
-Tumour hypoxia exhibits a highly dynamic spatial and temporal distribution and is associated with increased malignancy and poor prognosis.
-Assessment of time-dependent gene-expression changes in response to hypoxia may thus provide additional biological insights and help with patient prognosis.
+Tumour hypoxia exhibits a highly dynamic spatial and temporal distribution and is associated with increased malignancy and poor prognosis. Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
 
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41491
 
-Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
 
-All analyses were performed in R (v2.11.1). Data processing was performed for each cell line separately using RMA (affy package, v1.26.1) for pre-processing, and updated Entrez GeneID annotation (hgu133plus2hsentrezgcdf package, v13.0.0).
+
 
 ```{r message=FALSE, warning=FALSE}
 packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
@@ -44,9 +41,6 @@ package.check <- lapply(packages_cran, FUN = function(x) {
     library(x, character.only = TRUE)
   }
 })
-
-# For oligo and ArrayExpress First install:
-#install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
 
 if(!require("hgu133plus2hsentrezg.db")){ 
   install.packages('http://mbni.org/customcdf/13.0.0/entrezg.download/hgu133plus2hsentrezg.db_13.0.0.tar.gz',repos=NULL) 
@@ -110,20 +104,22 @@ rm(package.check, packages_bioconductor, packages_cran)
 <!-- save.image("../data/data.GSE41491.Rdata") -->
 <!-- ``` -->
 
-
 # Load the pre-processed data
 
 ```{r}
 load("../data/data.GSE41491.Rdata")
+cols <- colnames(expr.GSE41491)
+rows <- rownames(expr.GSE41491)
+expr.GSE41491 <- data.frame(matrix(effectsize::normalize(as.matrix(expr.GSE41491)), ncol = length(cols), nrow = length(rows) ))
+colnames(expr.GSE41491) <- cols
+rownames(expr.GSE41491) <- rows 
 ```
-
 
 # Selecting the HIF Genes 
     
 ```{r}
 # Selected genes from HIF Axis
 hif.symbols <- c("TP53", "HIF1A", "EP300", "MDM2", "VBP1") 
-
 hif.probes <- unique(anno.GSE41491$probes[anno.GSE41491$symbol %in% hif.symbols])
 
 # Select the probes and genes
@@ -131,15 +127,13 @@ expr.GSE41491.hif <- data.frame(expr.GSE41491) %>%
   rownames_to_column('probes') %>% 
   filter(probes %in% hif.probes) %>% 
   merge(anno.GSE41491[anno.GSE41491$symbol %in% hif.symbols, c("probes","symbol")], by = "probes") %>% 
-  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
-  dplyr::select(!(probes)) %>% 
-  arrange(symbol)
-  
+  dplyr::select(!(probes)) %>%  arrange(symbol)
+
+expr.GSE41491.hif$symbol[expr.GSE41491.hif$symbol == "VBP1"] <- "VHL"
 ```
 
-```{r}
+```{r  include=FALSE}
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
-
 binNet <- function(b){
   
   cols <- data.GSE41491$codes %in% names(b)
@@ -148,17 +142,34 @@ binNet <- function(b){
   as.data.frame(.)  %>% 
   aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
   mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
-  rbind(., c("O2", 1,,0,0,0,0,0,0,0)) %>% 
+  rbind(., c("O2", 1,0,0,0,0,0,0,0)) %>% 
     rename_at(vars(data.GSE41491$codes[cols] ),
             ~paste0(substr(data.GSE41491$condition[cols],1,2),".",
                     data.GSE41491$time[cols],".",
                     substr(data.GSE41491$cell_line[cols],1,2))) %>% 
   column_to_rownames("symbol")
-  
 }
+
+breast_MCF7 <- 
+expr.GSE41491.hif %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"]))  %>% 
+  binNet(.) 
+knitr::kable(breast_MCF7)
+
+prostate_DU145 <- 
+expr.GSE41491.hif %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "DU145"]))  %>% 
+  binNet(.) 
+knitr::kable(prostate_DU145)
+
+colon_HT29 <- 
+expr.GSE41491.hif %>% 
+  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "HT29"]))  %>% 
+  binNet(.) 
+knitr::kable(colon_HT29)
 ```
 
-Exponentially growing prostate (DU145), colon (HT29) and breast (MCF7) carcinoma cells were seeded on glass dishes in McCoy, DMEM or RPMI media, respectively with 10% FCS.
+# breast (MCF7) carcinoma cells - 8 time-points
 
 ```{r}
 
@@ -186,68 +197,64 @@ binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>
   
 ```
 
-# breast (MCF7) carcinoma cells 
+# prostate (DU145) carcinoma cells - 8 time-points
 
 ```{r}
-
-breast_MCF7 <- 
-expr.GSE41491.hif %>% 
-  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"]))  %>% 
-  binNet(.) 
-knitr::kable(breast_MCF7)
-
-
-# Individual net
-
-net <- reconstructNetwork(breast_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-
+prostate_DU145 %>% 
+  knitr::kable(.)
 ```
 
-# prostate (DU145) carcinoma cells 
+# colon (HT29) carcinoma cells - 8 time-points
 
 ```{r}
-
-prostate_DU145 <- 
-expr.GSE41491.hif %>% 
-  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "DU145"]))  %>% 
-  binNet(.) 
-knitr::kable(prostate_DU145)
-
-
-net <- reconstructNetwork(prostate_DU145, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-
+colon_HT29 %>% 
+  knitr::kable(.)
 ```
 
-#  colon (HT29)  carcinoma cells 
-
 ```{r}
+# breast (MCF7) carcinoma cells - 8 time-points
+breast_MCF7.net <- reconstructNetwork(breast_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+breast_MCF7.p <- plotNetworkWiring(breast_MCF7.net, plotIt=F)
 
-colon_MCF7 <- 
-expr.GSE41491.hif %>% 
-  dplyr::select(c("symbol", data.GSE41491$codes[data.GSE41491$cell_line == "HT29"]))  %>% 
-  binNet(.) 
-knitr::kable(colon_MCF7)
+# prostate (DU145) carcinoma cells - 8 time-points
+prostate_DU145.net <- reconstructNetwork(prostate_DU145, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+prostate_DU145.p <- plotNetworkWiring(prostate_DU145.net, plotIt=F)
 
-
-# Individual net
-
-net <- reconstructNetwork(colon_MCF7, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
-
+# colon (HT29) carcinoma cells - 8 time-points
+colon_HT29.net <- reconstructNetwork(colon_HT29, method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+colon_HT29.p <- plotNetworkWiring(colon_HT29.net, plotIt=F)
 ```
 
 
-# All three cells prostate (DU145), colon (HT29) and breast (MCF7) carcinoma 
+```{r}
+par(mfrow = c(1,3))
+plot(breast_MCF7.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="breast (MCF7)\n 8 steps")
+plot(prostate_DU145.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="prostate (DU145)\n 8 steps")
+plot(colon_HT29.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="colon (HT29)\n 8 steps")
+```
+
+
+<!-- ```{r} -->
+<!-- all.nets <- reconstructNetwork(list(breast_MCF7, prostate_DU145, colon_HT29), method="bestfit",returnPBN=TRUE,readableFunctions=TRUE) -->
+<!-- plotNetworkWiring(net.all, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+<!--      main="all lines \n breast, prostate, colon - 4 steps") -->
+<!-- ``` -->
+
 
 ```{r}
+# breast (MCF7) carcinoma cells - 8 time-points
+print(breast_MCF7.net)
 
-net <- reconstructNetwork(list(breast_MCF7,prostate_DU145, colon_MCF7), method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-plotNetworkWiring(net)
-print(net)
+# prostate (DU145) carcinoma cells - 8 time-points
+print(prostate_DU145.net)
 
+# colon (HT29) carcinoma cells - 8 time-points
+print(colon_HT29.net)
+
+# all lines - breast, prostate, colon - 4 steps
+#print(all.nets)
 ```
+

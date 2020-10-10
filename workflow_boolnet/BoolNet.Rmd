@@ -35,7 +35,7 @@ library(BoolNet)
 
 
 ```{r}
-net <- loadNetwork("boolean_network_HIFaxis.bn")
+net <- loadNetwork("reduced_HIFaxis.bn")
 net
 ```
 
