@@ -1,54 +1,80 @@
 ---
 title: "Fundamental Boolean Network"
-pagetitle: "Fundamental Boolean Network"
-author: "Leshi Chen"
-affiliation: Lincoln University, New Zealand
-date: "`r Sys.Date()`"
-url: https://www.frontiersin.org/articles/10.3389/fphys.2018.01328/full
-output: 
-  pdf_document: default
-  html_document: 
-    default
+output:
   github_document: 
     df_print: paged
-    html_preview: FALSE
-    keep_html: TRUE
+    html_preview: true
+    keep_html: true
+  rmarkdown::html_document:
+    citation_package: natbib
+    fig_caption: true
+    theme: null
+    lib_dir: libs
+#output: rmarkdown::pdf_document
+header-includes:
+  -  \usepackage{hyperref}
+always_allow_html: true
+geometry: margin=1in
+fontsize: 11pt
+spacing: double
+endnote: no
+graphics: yes
+vignette: >
+  %\VignetteIndexEntry{P}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })    
+  rmarkdown::render(inputFile, encoding = encoding, output_format = "all") })      
 ---
 
-
-
-```{r echo=FALSE, error=FALSE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
+```{r setup, include = FALSE}
+ options(tinytex.verbose = TRUE)
+ options(width = 150)
+ knitr::opts_chunk$set(
+   cache = FALSE,
+   message = FALSE,
+   warning = FALSE,
+   collapse = TRUE,
+   comment = "#>",
+   fig.width = 12, fig.height = 8
+ )     
+```
+  
+```{r error=TRUE, message=FALSE, warning=FALSE, include=FALSE, purl=FALSE, results='hide'}
 ## This chunk automatically generates a text .R version of this script when running within knitr.
-input  = knitr::current_input()  # filename of input document
-output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
-try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
-
-# Avoid duplicate label error of knitr::purl
+# input  = knitr::current_input()  # filename of input document
+# output = paste(tools::file_path_sans_ext(input), 'R', sep = '.')
+# try(knitr::purl(input,output,documentation=2,quiet=T), silent = TRUE)
+## Avoid duplicate label error of knitr::purl
 options(knitr.duplicate.label = 'allow')
-# Code to browse the markdown file with renderized images.
+## Code to browse the markdown file with renderized images.
 knitr::opts_chunk$set(
-  fig.path = "figs/render_discrete-"
+  fig.path = "figs/FBNNet-"
 )
-rm(input,output)
 ```
 
 
 # Installing and Loading Libraries            
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-packages_bioconductor = c("limma")
+# packages_bioconductor = c("limma")
+# 
+# #use this function to check if each package is on the local machine
+# #if a package is installed, it will be loaded
+# #if any are not, the missing package(s) will be installed from Bioconductor and loaded
+# package.check <- lapply(packages_bioconductor, FUN = function(x) {
+#   if (!require(x, character.only = TRUE)) {
+#     BiocManager::install(x, dependencies = TRUE)
+#     library(x, character.only = TRUE)
+#   }
+# })
 
-#use this function to check if each package is on the local machine
-#if a package is installed, it will be loaded
-#if any are not, the missing package(s) will be installed from Bioconductor and loaded
-package.check <- lapply(packages_bioconductor, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    BiocManager::install(x, dependencies = TRUE)
-    library(x, character.only = TRUE)
-  }
-})
+library(knitr)
+library(BoolNet)
+library(utils)
+library(FBNNet)
+library(visNetwork)
+
 
 packages_cran = c("BoolNet","utils", "visNetwork", "FBNNet","tictoc")
   
@@ -65,7 +91,7 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 #devtools::install_github("clsdavid/FBNNet2_public")
 #devtools::install_github("collectivemedia/tictoc")
 
-rm(package.check, packages_bioconductor, packages_cran)
+rm(package.check, packages_cran)
 ```
 
 
@@ -83,12 +109,12 @@ The experiments conducted and described here intend to prove the concept of the 
 ## Data
 
 ```{r, out.width = "100%"}
-
-hif1a.net<-loadNetwork("boolean_network_HIFaxis.bn")
+hif1a.net<-loadNetwork("../data/reduced_HIFaxis.bn")
 hif1a.net
 ```
 
 ## Extract the Fundamental Boolean Network
+
 ```{r, out.width = "100%"}
 
 tic("Total - Extract FBN")
@@ -113,16 +139,11 @@ print(FBNcellcyclenetwork)
 ```
 
 
-```{r, fig.width = 7.1, fig.height = 8}
-   FBNNet::FBNNetwork.Graph(FBNcellcyclenetwork)
-```
-
-
 ```{r, out.width = "100%"}
    resultfile <- reconstructTimeseries(FBNcellcyclenetwork,
                                     initialStates,
                                     type = "synchronous",
-                                    maxTimepoints = 10,
+                                    maxTimepoints = 43,
                                     useParallel = FALSE)
    similarreport <- generateSimilaryReport(trainingseries,resultfile)
    print(paste("ErrorRate=",similarreport$ErrorRate,sep = "",collapse = ""))
@@ -134,5 +155,11 @@ print(FBNcellcyclenetwork)
    attractor <- searchForAttractors(FBNcellcyclenetwork,initialStates,genes)
    print(attractor)
    #display the dynamic trajectory of the attactor 2
-   FBNNetwork.Graph.DrawAttractor(FBNcellcyclenetwork,attractor,2)
+   FBNNetwork.Graph.DrawAttractor(FBNcellcyclenetwork,attractor,1)
+```
+
+```{r, out.width = "100%"}
+
+FBNNet::FBNNetwork.Graph(FBNcellcyclenetwork)
+
 ```
