@@ -1,0 +1,7 @@
+targets, factors
+HIF1a, !VHL & !O2
+p53, !Mdm2 
+Mdm2, p53 & !VHL
+VHL, HIF1a & !p53 
+p300, ((p53 & HIF1a) & !VHL) | (!(p53 & HIF1a) & VHL)
+APOP , p53 & p300 & (!HIF1a | !VHL | !Mdm2)
