@@ -49,14 +49,14 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 })
 # For oligo and ArrayExpress First install:
 #install.packages('https://cran.r-project.org/src/contrib/Archive/ff/ff_2.2-14.tar.gz',repos=NULL)
-packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "ArrayExpress", "illuminaHumanv3.db")
-# Install and load packages
-package.check <- lapply(packages_bioconductor, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    BiocManager::install(x, dependencies = TRUE)
-    library(x, character.only = TRUE)
-  }
-})
+# packages_bioconductor = c("Biobase", "GEOquery", "affyPLM", "ArrayExpress", "illuminaHumanv3.db")
+# # Install and load packages
+# package.check <- lapply(packages_bioconductor, FUN = function(x) {
+#   if (!require(x, character.only = TRUE)) {
+#     BiocManager::install(x, dependencies = TRUE)
+#     library(x, character.only = TRUE)
+#   }
+# })
 rm(package.check, packages_bioconductor, packages_cran)
 ```
 
@@ -197,11 +197,47 @@ expr.GSE47533.hif %>%
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 3]))  %>% 
   binNet(.) 
 
+breast_MCF7.mean <- 
+cbind(breast_MCF7.1, breast_MCF7.2,breast_MCF7.3) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>% 
+  mutate(No.0.MC = rowMeans(select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.16h.MC = rowMeans(select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.32h.MC = rowMeans(select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.48h.MC = rowMeans(select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
+  dplyr::select(c("No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC", "gene")) %>%
+  mutate_at(c("No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)  
+  tibble::column_to_rownames('gene')
+
+
+
+  
 # All breast cancer nets merged:
 all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3),
                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
 all.p <- plotNetworkWiring(all.nets, plotIt=F)
+
+
+  
+# Mean of replicate breast cancer net :
+mean.net <- reconstructNetwork(breast_MCF7.mean,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+mean.p <- plotNetworkWiring(mean.net, plotIt=F)
+
+# Mean of replicate breast cancer net without O2 :
+mean.nox.net <- reconstructNetwork(breast_MCF7.mean[c(1:5),],
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+mean.nox.p <- plotNetworkWiring(mean.nox.net, plotIt=F)
+
+# Mean of replicate breast cancer net with only Hypoxia state:
+
+mean.hyp.net <- reconstructNetwork(breast_MCF7.mean[,c("Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC")],
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+mean.hyp.p <- plotNetworkWiring(mean.hyp.net, plotIt=F)
 
 ```
 
@@ -231,6 +267,9 @@ print(breast_MCF7.3.net)
 
 # MCF7 breast - 4 steps, all replicates
 print(all.nets)
+
+# MCF7 breast - 4 steps, all replicates
+print(mean.net)
 ```
 
 
@@ -238,16 +277,35 @@ print(all.nets)
 # MCF7 breast cancer - 4 time-points 
 par(mfrow = c(1,3))
 plot(breast_MCF7.1.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 4 steps, replicate 1")
+     main="MCF7 breast\n 4 time-points, replicate 1")
 plot(breast_MCF7.2.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 4 steps, replicate 2")
+     main="MCF7 breast\n 4 time-points, replicate 2")
 plot(breast_MCF7.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 4 steps, replicate 3")
+     main="MCF7 breast\n 4 time-points, replicate 3")
 ```
 
 ```{r}
 par(mfrow = c(1,1))
 plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 4 steps, all replicates")
+     main="MCF7 breast\n 4 time-points, all replicates")
 ```
 
+
+```{r}
+par(mfrow = c(1,1))
+plot(mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 time-points, Mean replicates")
+```
+
+```{r}
+par(mfrow = c(1,1))
+plot(mean.nox.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 time-points, without O2")
+```
+
+
+```{r}
+par(mfrow = c(1,1))
+plot(mean.hyp.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 3 time-points, without Normoxia time-point")
+```
