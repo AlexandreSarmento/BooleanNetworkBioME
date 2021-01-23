@@ -1,4 +1,5 @@
-Merging Breast Cancer Cell-lines (E-GEOD-18494, GSE47533 and GSE41491)
+Expression Analysis of Breast Cancer Cell-lines (E-GEOD-18494, GSE47533
+and GSE41491)
 ================
 
 Rede Alexandre (reunião 27-11-2020)
@@ -268,11 +269,11 @@ head(expr.GSE47533.hif.bin) %>%
 
 |       | Norm.0.1 | Norm.0.2 | Norm.0.3 | Hypo.16h.1 | Hypo.16h.2 | Hypo.16h.3 | Hypo.32h.1 | Hypo.32h.2 | Hypo.32h.3 | Hypo.48h.1 | Hypo.48h.2 | Hypo.48h.3 | threshold | p.value | symbol |
 | :---- | -------: | -------: | -------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | --------: | ------: | :----- |
-| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.787 | BAD    |
+| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.796 | BAD    |
 | BAX   |        0 |        1 |        1 |          0 |          0 |          0 |          1 |          0 |          0 |          1 |          1 |          1 |  7.978194 |   1.000 | BAX    |
 | BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.923 | BCL2   |
 | BIK   |        0 |        0 |        0 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |  8.755742 |   0.001 | BIK    |
-| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.956 | BIM    |
+| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.963 | BIM    |
 | CASP3 |        1 |        1 |        1 |          0 |          0 |          1 |          1 |          0 |          0 |          0 |          0 |          0 |  7.799389 |   0.001 | CASP3  |
 
 ``` r
@@ -375,18 +376,14 @@ p.MDA
 ![](figs/BoolNetInfer-unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
-par(mfrow = c(1,2))
+library(cowplot)
 
-p.MDA
+plot_grid(p.MDA, p.MCF7, labels = c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-11-2.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-12-1.png)<!-- -->
 
-``` r
-p.MCF7
-```
-
-![](figs/BoolNetInfer-unnamed-chunk-11-3.png)<!-- -->
+# Heatmaps - EGEOD18494
 
 ``` r
 library("pheatmap")
@@ -398,12 +395,9 @@ row <- data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"
 
 annotation_for_heatmap <- droplevels(data.frame(time = data.EGEOD18494$time[row], condition = data.EGEOD18494$condition[row]))
 
-#row.names(annotation_for_heatmap) <- colnames(expr.EGEOD18494.hif)
 row.names(annotation_for_heatmap) <- paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row])
 
 dists <- as.matrix(dist(t(expr.EGEOD18494.hif), method = "manhattan")) 
-
-#rownames(dists) <- colnames(expr.EGEOD18494.hif)
 
 rownames(dists) <- c(paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row]))
 colnames(dists) <- c(paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row]))
@@ -441,40 +435,13 @@ pheatmap(dists, col = (hmcol),
          main = "Clustering of Samples (EGEOD18494)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-12-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
-row <- data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"
-
-annotation_for_heatmap <- droplevels(data.frame(time = data.EGEOD18494$time[row], condition = data.EGEOD18494$condition[row]))
-
-row.names(annotation_for_heatmap) <- colnames(expr.EGEOD18494.hif)
-
 dists <- as.matrix(dist(expr.EGEOD18494.hif, method = "euclidean")) 
-
 rownames(dists) <- rownames(expr.EGEOD18494.hif)
-
-hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
 colnames(dists) <- rownames(expr.EGEOD18494.hif)
 diag(dists) <- NA 
-
-ann_colors <- list(  
-  time = RColorBrewer::brewer.pal(length(levels(data.EGEOD18494$time)), "Set2"),
-  condition = c("#EF8A62", "#67A9CF")
-)
-
-ann_colors
-```
-
-    ## $time
-    ## [1] "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3"
-    ## 
-    ## $condition
-    ## [1] "#EF8A62" "#67A9CF"
-
-``` r
-names(ann_colors$time) <- levels(data.EGEOD18494$time)
-names(ann_colors$condition) <- levels(data.EGEOD18494$condition)
 
 pheatmap(dists, #row = (hmcol), 
          #annotation_col = annotation_for_heatmap,
@@ -484,62 +451,29 @@ pheatmap(dists, #row = (hmcol),
          legend_breaks = c(min(dists, na.rm = TRUE), 
                            max(dists, na.rm = TRUE)), 
          legend_labels = (c("small dist", "large dist")),
-         main = "Clustering of Gene Expression - Euclidian Distance  (EGEOD18494)")
+         main = "Clustering of Gene Expression \n Euclidian Distance  (EGEOD18494)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-13-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
 
-row <- data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$condition == "hypoxia"
-
-annotation_for_heatmap <- droplevels(data.frame(time = data.EGEOD18494$time[row], condition = data.EGEOD18494$condition[row]))
-
 expr.row <- (colnames(expr.EGEOD18494.hif) %in% data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$condition == "hypoxia"])
-
-row.names(annotation_for_heatmap) <- colnames(expr.EGEOD18494.hif[expr.row])
-
 dists <- as.matrix(dist(expr.EGEOD18494.hif[expr.row], method = "euclidean")) 
-
 rownames(dists) <- rownames(expr.EGEOD18494.hif[expr.row])
-
-hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
 colnames(dists) <- rownames(expr.EGEOD18494.hif[expr.row])
 diag(dists) <- NA 
 
-ann_colors <- list(  
-  time = RColorBrewer::brewer.pal(length(levels(data.EGEOD18494$time)), "Set2"),
-  condition = c("#EF8A62", "#67A9CF")
-)
-
-ann_colors
-```
-
-    ## $time
-    ## [1] "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3"
-    ## 
-    ## $condition
-    ## [1] "#EF8A62" "#67A9CF"
-
-``` r
-names(ann_colors$time) <- levels(data.EGEOD18494$time)
-names(ann_colors$condition) <- levels(data.EGEOD18494$condition)
-
-pheatmap(dists, #row = (hmcol), 
-         #annotation_col = annotation_for_heatmap,
-         #annotation_colors = ann_colors,
+p1 <- pheatmap(dists, 
          legend = TRUE, 
          treeheight_row = 0,
          legend_breaks = c(min(dists, na.rm = TRUE), 
                            max(dists, na.rm = TRUE)), 
          legend_labels = (c("small dist", "large dist")),
-         main = "Clustering of Gene Expression on Hypoxia - Euclidian Distance  (EGEOD18494)")
-```
+         main = "Clustering of Gene Expression on Hypoxia \n  Euclidian Distance  (EGEOD18494)",
+         silent=T)
 
-![](figs/BoolNetInfer-unnamed-chunk-13-2.png)<!-- -->
-
-``` r
 #---------------------------------------------------------------------------------
 
 row <- data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$condition == "normoxia"
@@ -576,7 +510,7 @@ ann_colors
 names(ann_colors$time) <- levels(data.EGEOD18494$time)
 names(ann_colors$condition) <- levels(data.EGEOD18494$condition)
 
-pheatmap(dists, #row = (hmcol), 
+p2 <- pheatmap(dists, #row = (hmcol), 
          #annotation_col = annotation_for_heatmap,
          #annotation_colors = ann_colors,
          legend = TRUE, 
@@ -584,47 +518,25 @@ pheatmap(dists, #row = (hmcol),
          legend_breaks = c(min(dists, na.rm = TRUE), 
                            max(dists, na.rm = TRUE)), 
          legend_labels = (c("small dist", "large dist")),
-         main = "Clustering of Gene Expression on Normoxia - Euclidian Distance  (EGEOD18494)")
+         main = "Clustering of Gene Expression on Normoxia \n Euclidian Distance  (EGEOD18494)",
+         silent=T)
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-13-3.png)<!-- -->
+``` r
+gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable), 
+                        nrow = 2 , labels=c('A', 'B'))
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 data.EGEOD18494$time <- factor(data.EGEOD18494$time,  levels =  c("control", "4h" , "8h" , "12h 4h"))
 
-row <- data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"
-
-annotation_for_heatmap <- droplevels(data.frame(time = data.EGEOD18494$time[row], condition = data.EGEOD18494$condition[row]))
-
-row.names(annotation_for_heatmap) <- colnames(expr.EGEOD18494.hif)
-
-#dists <- as.matrix(dist(expr.EGEOD18494.hif, method = "pearson")) 
-dists <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "pearson")
-
-
+dists <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "spearman")
 rownames(dists) <- rownames(expr.EGEOD18494.hif)
-
 hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
 colnames(dists) <- rownames(expr.EGEOD18494.hif)
 diag(dists) <- NA 
-
-ann_colors <- list(  
-  time = RColorBrewer::brewer.pal(length(levels(data.EGEOD18494$time)), "Set2"),
-  condition = c("#EF8A62", "#67A9CF")
-)
-
-ann_colors
-```
-
-    ## $time
-    ## [1] "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3"
-    ## 
-    ## $condition
-    ## [1] "#EF8A62" "#67A9CF"
-
-``` r
-names(ann_colors$time) <- levels(data.EGEOD18494$time)
-names(ann_colors$condition) <- levels(data.EGEOD18494$condition)
 
 pheatmap(dists, #row = (hmcol), 
          #annotation_col = annotation_for_heatmap,
@@ -634,7 +546,349 @@ pheatmap(dists, #row = (hmcol),
          legend_breaks = c(min(dists, na.rm = TRUE), 
                            max(dists, na.rm = TRUE)), 
          legend_labels = (c("-1", "1")),
-         main = "Clustering of Gene Expression - Pearson Correlation (EGEOD18494)")
+         main = "Clustering of Gene Expression \n Spearman Correlation (EGEOD18494)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-14-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-16-1.png)<!-- -->
+
+# Heatmaps - GSE47533
+
+``` r
+library("pheatmap")
+library("ComplexHeatmap")
+
+data.GSE47533$time <- factor(data.GSE47533$time,  levels =  c("0", "16h" , "32h" , "48h"))
+
+annotation_for_heatmap <- droplevels(data.frame(time = data.GSE47533$time, condition = data.GSE47533$condition))
+
+row.names(annotation_for_heatmap) <- paste0(substr(data.GSE47533$condition,1,4),".", data.GSE47533$time, ".", data.GSE47533$rep)
+
+dists <- as.matrix(dist(t(expr.GSE47533.hif), method = "manhattan")) 
+
+rownames(dists) <- c(paste0(substr(data.GSE47533$condition,1,4),".", data.GSE47533$time, ".", data.GSE47533$rep))
+colnames(dists) <- c(paste0(substr(data.GSE47533$condition,1,4),".", data.GSE47533$time, ".", data.GSE47533$rep))
+
+hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
+
+diag(dists) <- NA 
+
+ann_colors <- list(  
+  time = RColorBrewer::brewer.pal(length(levels(data.GSE47533$time)), "Set2"),
+  condition = c("red", "blue")
+)
+
+ann_colors
+```
+
+    ## $time
+    ## [1] "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3"
+    ## 
+    ## $condition
+    ## [1] "red"  "blue"
+
+``` r
+names(ann_colors$time) <- levels(data.GSE47533$time)
+names(ann_colors$condition) <- levels(data.GSE47533$condition)
+
+pheatmap(dists, col = (hmcol), 
+         annotation_row = annotation_for_heatmap,
+         annotation_colors = ann_colors,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Samples (GSE47533)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+dists <- as.matrix(dist(expr.GSE47533.hif, method = "euclidean")) 
+rownames(dists) <- rownames(expr.GSE47533.hif)
+colnames(dists) <- rownames(expr.GSE47533.hif)
+diag(dists) <- NA 
+
+pheatmap(dists,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression \n Euclidian Distance  (GSE47533)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+#---------------------------------------------------------------------------------
+
+expr.row <- (colnames(expr.GSE47533.hif) %in% data.GSE47533$codes[data.GSE47533$condition == "Hypo"])
+dists <- as.matrix(dist(expr.GSE47533.hif[expr.row], method = "euclidean")) 
+rownames(dists) <- rownames(expr.GSE47533.hif[expr.row])
+colnames(dists) <- rownames(expr.GSE47533.hif[expr.row])
+diag(dists) <- NA 
+
+
+p1 <- pheatmap(dists,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression on Hypoxia \n  Euclidian Distance  (GSE47533)",
+         silent=T)
+
+#---------------------------------------------------------------------------------
+
+expr.row <- (colnames(expr.GSE47533.hif) %in% data.GSE47533$codes[data.GSE47533$condition == "Norm"])
+dists <- as.matrix(dist(expr.GSE47533.hif[expr.row], method = "euclidean")) 
+rownames(dists) <- rownames(expr.GSE47533.hif[expr.row])
+colnames(dists) <- rownames(expr.GSE47533.hif[expr.row])
+diag(dists) <- NA 
+
+
+p2 <- pheatmap(dists, 
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression on Normoxia \n Euclidian Distance  (GSE47533)",
+         silent=T)
+```
+
+``` r
+gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable), 
+                        nrow = 2 , labels=c('A', 'B'))
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-19-1.png)<!-- -->
+
+``` r
+dists <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "spearman")
+rownames(dists) <- rownames(expr.GSE47533.hif)
+colnames(dists) <- rownames(expr.GSE47533.hif)
+diag(dists) <- NA 
+
+pheatmap(dists, 
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("-1", "1")),
+         main = "Clustering of Gene Expression \n Spearman Correlation (GSE47533)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-20-1.png)<!-- -->
+
+# Heatmaps - All datasets Breast Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
+
+  - E-GEOD-18494 2012 / MDA-MB231 / breast / 4h, 8h, 12h / microarray  
+  - GSE41491 2012 / MCF7 / breast / 1h, 2h, 4h, 8h, 12h, 16h, 24h /
+    microarray  
+  - GSE47534 2014 / MCF7 / breast / normoxia, 16h, 32h, 48h / mRNA
+
+<!-- end list -->
+
+``` r
+# Imput the mean of all VHL values
+mean.vhl <- mean(unlist(expr.GSE47533.hif["VHL",], expr.EGEOD18494.hif["VHL",]))
+expr.GSE41491.hif["VHL",] <- rep(mean.vhl, 24)
+
+expr.all.hif <- cbind(expr.GSE47533.hif, expr.EGEOD18494.hif, expr.GSE41491.hif)
+
+col_brca <- union(data.GSE47533$codes[data.GSE47533$cell_line == "MCF7"], 
+                  union(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"],
+                        data.GSE41491$codes[data.GSE41491$cell_line == "MCF7"]))
+
+expr.all.hif <- expr.all.hif[, (colnames(expr.all.hif) %in% col_brca)]
+```
+
+``` r
+dists <- as.matrix(dist(expr.all.hif, method = "euclidean")) 
+rownames(dists) <- rownames(expr.all.hif)
+colnames(dists) <- rownames(expr.all.hif)
+diag(dists) <- NA 
+
+pheatmap(dists,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression \n Euclidian Distance  (All 3 datasets, breast cell-lines)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+#---------------------------------------------------------------------------------
+
+col_hypo <- union(data.GSE47533$codes[data.GSE47533$condition == "Hypo"], 
+                  union(data.EGEOD18494$codes[data.EGEOD18494$condition == "hypoxia"],
+                        data.GSE41491$codes[data.GSE41491$condition == "hy"]))
+
+expr.row <- (colnames(expr.all.hif) %in% col_hypo)
+dists <- as.matrix(dist(expr.all.hif[expr.row], method = "euclidean")) 
+rownames(dists) <- rownames(expr.all.hif[expr.row])
+colnames(dists) <- rownames(expr.all.hif[expr.row])
+diag(dists) <- NA 
+
+
+p1 <- pheatmap(dists,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression on Hypoxia \n  Euclidian Distance  (All 3 datasets, breast cell-lines)",
+         silent=T)
+
+#---------------------------------------------------------------------------------
+
+col_norm <- union(data.GSE47533$codes[data.GSE47533$condition == "Norm"], 
+                  union(data.EGEOD18494$codes[data.EGEOD18494$condition == "normoxia"],
+                        data.GSE41491$codes[data.GSE41491$condition == "no"]))
+
+expr.row <- (colnames(expr.all.hif) %in% col_norm)
+dists <- as.matrix(dist(expr.all.hif[expr.row], method = "euclidean")) 
+rownames(dists) <- rownames(expr.all.hif[expr.row])
+colnames(dists) <- rownames(expr.all.hif[expr.row])
+diag(dists) <- NA 
+
+
+p2 <- pheatmap(dists, 
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression on Normoxia \n Euclidian Distance (All 3 datasets, breast cell-lines)",
+         silent=T)
+```
+
+``` r
+gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable), 
+                        nrow = 2 , labels=c('A', 'B'))
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-23-1.png)<!-- -->
+
+``` r
+dists <- cor(t(expr.all.hif), use = "pairwise.complete.obs", method = "spearman")
+rownames(dists) <- rownames(expr.all.hif)
+colnames(dists) <- rownames(expr.all.hif)
+diag(dists) <- NA 
+
+pheatmap(dists, 
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("-1", "1")),
+         main = "Clustering of Gene Expression \n Spearman Correlation (All 3 datasets, breast cell-lines)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-24-1.png)<!-- -->
+
+# Heatmaps - All datasets All Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
+
+  - E-GEOD-18494 2012 / HepG2, U87, MDA-MB231 / hepatoma, glioma, breast
+    / 4h, 8h, 12h / microarray  
+  - GSE41491 2012 / DU145, HT29, MCF7 / prostate, colon, breast / 1h,
+    2h, 4h, 8h, 12h, 16h, 24h / microarray  
+  - GSE47534 2014 / MCF7 / breast / normoxia, 16h, 32h, 48h / mRNA
+
+<!-- end list -->
+
+``` r
+# Imput the mean of all VHL values
+mean.vhl <- mean(unlist(expr.GSE47533.hif["VHL",], expr.EGEOD18494.hif["VHL",]))
+expr.GSE41491.hif["VHL",] <- rep(mean.vhl, 24)
+
+expr.all.hif <- cbind(expr.GSE47533.hif, expr.EGEOD18494.hif, expr.GSE41491.hif)
+```
+
+``` r
+dists <- as.matrix(dist(expr.all.hif, method = "euclidean")) 
+rownames(dists) <- rownames(expr.all.hif)
+colnames(dists) <- rownames(expr.all.hif)
+diag(dists) <- NA 
+
+pheatmap(dists,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression \n Euclidian Distance  (All 3 datasets, all cell-lines)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+#---------------------------------------------------------------------------------
+
+col_hypo <- union(data.GSE47533$codes[data.GSE47533$condition == "Hypo"], 
+                  union(data.EGEOD18494$codes[data.EGEOD18494$condition == "hypoxia"],
+                        data.GSE41491$codes[data.GSE41491$condition == "hy"]))
+
+expr.row <- (colnames(expr.all.hif) %in% col_hypo)
+dists <- as.matrix(dist(expr.all.hif[expr.row], method = "euclidean")) 
+rownames(dists) <- rownames(expr.all.hif[expr.row])
+colnames(dists) <- rownames(expr.all.hif[expr.row])
+diag(dists) <- NA 
+
+
+p1 <- pheatmap(dists,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression on Hypoxia \n  Euclidian Distance  (All 3 datasets, all cell-lines)",
+         silent=T)
+
+#---------------------------------------------------------------------------------
+
+expr.row <- (colnames(expr.all.hif) %in% data.GSE47533$codes[data.GSE47533$condition == "Norm"])
+dists <- as.matrix(dist(expr.all.hif[expr.row], method = "euclidean")) 
+rownames(dists) <- rownames(expr.all.hif[expr.row])
+colnames(dists) <- rownames(expr.all.hif[expr.row])
+diag(dists) <- NA 
+
+
+p2 <- pheatmap(dists, 
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Gene Expression on Normoxia \n Euclidian Distance (All 3 datasets, all cell-lines)",
+         silent=T)
+```
+
+``` r
+gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable), 
+                        nrow = 2 , labels=c('A', 'B'))
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-27-1.png)<!-- -->
+
+``` r
+dists <- cor(t(expr.all.hif), use = "pairwise.complete.obs", method = "spearman")
+rownames(dists) <- rownames(expr.all.hif)
+colnames(dists) <- rownames(expr.all.hif)
+diag(dists) <- NA 
+
+pheatmap(dists, 
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("-1", "1")),
+         main = "Clustering of Gene Expression \n Spearman Correlation (All 3 datasets, all cell-lines)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-28-1.png)<!-- -->
