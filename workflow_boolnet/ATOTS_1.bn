@@ -1,6 +1,0 @@
-targets,factors
-HIF1a, !VHL & (!p53 | Mdm2)
-p53, !Mdm2 | (VHL | HIF1a)
-Mdm2, p53 & !VHL
-VHL, HIF1a 
-
