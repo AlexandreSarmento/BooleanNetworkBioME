@@ -1,0 +1,138 @@
+---
+title: "Untitled"
+author: "ASQ"
+date: "30/01/2021"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r}
+packages_cran = c("igraph", "BoolNet", "tidyverse", "ggraph")
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+if (!require(x, character.only = TRUE)) {
+install.packages(x, dependencies = TRUE)
+library(x, character.only = TRUE)
+}
+})
+```
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install()
+BiocManager::install("EBImage")
+```
+
+```{r}
+library(BoolNet)
+library(EBImage)
+```
+
+```{r}
+
+print("ATOTS Network inspired from this picture")
+mypic <- readImage("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/theoretical_BN/Sermeu2011.png")
+display(mypic, method = "raster")
+```
+
+
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/theoretical_BN")
+filePath <-"~/R/dataAnalysis_UFRN/BooleanNetworkBioME/theoretical_BN/"
+AttrFileName <- "ATOTS.bn"
+BasinFileName <- "syncBasin.txt"
+theoreticalNet <- loadNetwork(paste(filePath,AttrFileName,sep=""))
+print(theoreticalNet)
+attrSC <- getAttractors(theoreticalNet, type = "synchronous")
+# jpeg(file=paste(filePath,"SyncAttr.png",sep=""))
+plotAttractors(attrSC)
+# dev.off()  
+# If we want to plot in Graph Mode
+# jpeg(file=paste(filePath,"SyncAttrG.png",sep=""))
+# plotAttractors(attrSC, mode = "graph")
+# dev.off()
+# SyncBasin <- getBasinOfAttraction(attrSC, 1)
+# write.table(SyncBasin, 
+#             file = paste(filePath,BasinFileName,sep=""),
+#             row.names = TRUE, col.names = TRUE)
+
+# LOOP TO OVEREXPRESSION SIMULATIONS
+for (loop1 in 1:length(theoreticalNet$genes)-1) {
+  
+  overexpression <- fixGenes(theoreticalNet, theoreticalNet$genes[loop1], 1)
+  attrOE <- getAttractors(overexpression, type = "synchronous")
+  OverExpFileName <- paste(theoreticalNet$genes[loop1],"_overExpT.png",sep="")
+  cat("Attractor Overexpression: ", theoreticalNet$genes[loop1])
+  # jpeg(file=paste(filePath,OverExpFileName,sep=""))
+  plotAttractors(attrOE)
+  # dev.off()
+  # If we want to plot in Graph Mode
+  # OverExpFileName <- paste(theoreticalNet$genes[ii],"_overExpG.png",sep="")
+  # jpeg(file=paste(pathName,OverExpFileName,sep=""))
+  # plotAttractors(attrSC, mode = "graph")
+  # dev.off()
+  cat("Basin Overexpression: ", theoreticalNet$genes[loop1])
+  print(getBasinOfAttraction(attrOE, 1))
+  # BasinFileName <- paste(theoreticalNet$genes[loop1],"_OverExpBasin.txt",sep="")
+  # write.table(OverBasin, 
+  #             file = paste(filePath,BasinFileName,sep=""),
+  #             sep = " ",row.names = TRUE, col.names = TRUE)
+  
+}
+
+# LOOP TO KNOCKOUT EXPERIMENTS
+for (loop2 in 1:length(theoreticalNet$genes)-1) {
+  
+  knockout <- fixGenes(theoreticalNet, theoreticalNet$genes[loop2], 0)
+  attrKO <- getAttractors(knockout, type = "synchronous")
+  KnockoutFileName <- paste(theoreticalNet$genes[loop2],"_KOexpT.png",sep="")
+  # jpeg(file=paste(filePath,KnockoutFileName,sep=""))
+  cat("Knockout: ", theoreticalNet$genes[loop2])
+  plotAttractors(attrKO)
+  # dev.off()
+  # If we want to plot in Graph Mode
+  # KnockoutFileName <- paste(theoreticalNet$genes[loop2],"_KOexpG.png",sep="")
+  # jpeg(file=paste(filePath,KnockoutFileName,sep=""))
+  # plotAttractors(attrKO,mode ="graph")
+  # dev.off()
+  cat("Basin Knokcout: ", theoreticalNet$genes[loop2])
+  print(getBasinOfAttraction(attrKO, 1))
+  # BasinFileName <- paste(theoreticalNet$genes[loop2],"_KOBasin.txt",sep="")
+  # write.table(OverBasin, 
+  #             file = paste(filePath,BasinFileName,sep=""),
+  #             sep = " ",row.names = TRUE, col.names = TRUE)
+  
+}
+
+```
+
+
+```{r}
+# LET GET STATES TRANSITION TO AN SPECIFIC ATTRACTOR STATE
+# lets recovery the attractors of synchronic simulation again
+attr2trans <- getAttractors(theoreticalNet, type = "synchronous")
+# Does a given attractor state shall be deep explored? 
+# Lets get the summary of the state number five of the attractor
+getStateSummary(attr2trans, c(1,0,1,0,1,0))
+# lets get the summary of the state number four of the attractor
+getStateSummary(attr2trans, c(1,1,1,0,1,0))
+# Where the boolean network converge wnhen only HIF1a is activated? 
+pathSC <- getPathToAttractor(theoreticalNet,c(0,0,0,0,0,0),
+                             includeAttractorStates = "first")
+plotSequence(sequence=pathSC)
+
+# Lets recovery overexpression experiment of a given node
+pickNode <- "HIF1a"
+ovesp <- fixGenes(theoreticalNet,pickNode, 1)
+attrOE <- getAttractors(ovesp, type = "synchronous")
+plotAttractors(attrOE)
+# Get the summary of a given initial condition
+getStateSummary(attrOE, c(1,1,1,0,1,0))
+# What attractor this intial condition converge?
+path <- getPathToAttractor(ovesp,c(1,0,0,0,0,0),includeAttractorStates = "first")
+plotSequence(sequence=path)
+
+```
