@@ -16,13 +16,17 @@ This project includes:
 
   * [GSE142867](workflow_differential_expression/pipeline_GSE142867.md) presents RNA-sequencing data on erythropoietic cells cultured in normoxia or hypoxia at days 3, 7, and 10.
   
+# Merging and discretization of Expression
+  * [Merging_BreastData](workflow_merging/Merging_BreastData.md) Expression Analysis of Breast Cancer: Curves and Heatmaps
   
 # Datasets BoolNet Inference:
-  * [Breast cell lines](workflow_boolnet/BoolNetInference.md)		datasets merged / MDA-MB23, MCF7 / breast /	microarray, mRNA
-  * [E-GEOD-18494](workflow_boolnet/BoolNetInference_EGEOD18494.md)	2012	/ HepG2, U87, MDA-MB231 / hepatoma, glioma, breast /	4h, 8h, 12h	/	microarray
-  * [GSE41491](workflow_boolnet/BoolNetInference_GSE41491.md)	2012 / DU145, HT29, MCF7 /	prostate, colon, breast	/ 1h, 2h, 4h, 8h, 12h, 16h, 24h	/	microarray
-  * [GSE47534](workflow_boolnet/BoolNetInference_GSE47534.md)	2014 / MCF7 /	breast	/ normoxia, 16h, 32h, 48h	/	mRNA
-  * [GSE52695](workflow_boolnet/BoolNetInference_GSE52695.md)	2016	/ A2780	/ ovarian /	6h, 48h, 6d	/	rna-seq
+  * [GSE47533](workflow_boolnet/BoolNetInference_GSE47533.md)	2014 / MCF7 /	breast	/ normoxia, 16h, 32h, 48h	/	mRNA
+
+# Others Datasets BoolNet Inference:
+  * [Breast cell lines](workflow_boolnet/misc_analysis/BoolNetInference.md)		datasets merged / MDA-MB23, MCF7 / breast /	microarray, mRNA
+  * [E-GEOD-18494](workflow_boolnet/misc_analysis/BoolNetInference_EGEOD18494.md)	2012	/ HepG2, U87, MDA-MB231 / hepatoma, glioma, breast /	4h, 8h, 12h	/	microarray
+  * [GSE41491](workflow_boolnet/misc_analysis/BoolNetInference_GSE41491.md)	2012 / DU145, HT29, MCF7 /	prostate, colon, breast	/ 1h, 2h, 4h, 8h, 12h, 16h, 24h	/	microarray
+  * [GSE52695](workflow_boolnet/misc_analysis/BoolNetInference_GSE52695.md)	2016	/ A2780	/ ovarian /	6h, 48h, 6d	/	rna-seq
 
   
 #### Authors :busts_in_silhouette:
