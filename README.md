@@ -16,9 +16,12 @@ This project includes:
 
   * [GSE142867](workflow_differential_expression/pipeline_GSE142867.md) presents RNA-sequencing data on erythropoietic cells cultured in normoxia or hypoxia at days 3, 7, and 10.
   
+<<<<<<< HEAD
 # Theoretical Network: BoolNet of ATOTS
   * [BoolNet of ATOTS](workflow_boolnet/BoolNet_ATOTS.md) Theoretical Network of ATOTS
   
+=======
+>>>>>>> fa94c2b15dfa4d9f27726431d97b0281c0adf7c8
 # Merging and discretization of Expression
   * [Merging_BreastData](workflow_merging/Merging_BreastData.md) Expression Analysis of Breast Cancer: Curves and Heatmaps
   
