@@ -4,7 +4,7 @@ Theoretical Network: BoolNet
 # Boolean network from HIFaxis
 
 ``` r
-net <- loadNetwork("ATOTS.bn")
+net <- loadNetwork("../data/ATOTS.bn")
 net
 ```
 

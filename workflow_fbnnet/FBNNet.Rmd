@@ -108,8 +108,10 @@ The experiments conducted and described here intend to prove the concept of the 
 
 ## Data
 
+# Theoretical Netwoork
+
 ```{r, out.width = "100%"}
-hif1a.net<-loadNetwork("../data/reduced_HIFaxis.bn")
+hif1a.net <- loadNetwork("../data/ATOTS.bn")
 hif1a.net
 ```
 
@@ -156,6 +158,66 @@ print(FBNcellcyclenetwork)
    print(attractor)
    #display the dynamic trajectory of the attactor 2
    FBNNetwork.Graph.DrawAttractor(FBNcellcyclenetwork,attractor,1)
+```
+
+```{r, out.width = "100%"}
+
+FBNNet::FBNNetwork.Graph(FBNcellcyclenetwork)
+
+```
+
+
+
+# Inferred Netwoork
+
+```{r, out.width = "100%"}
+hif1a.net <- loadNetwork("../data/ATOTS_inferred.bn")
+hif1a.net
+```
+
+## Extract the Fundamental Boolean Network
+
+```{r, out.width = "100%"}
+
+tic("Total - Extract FBN")
+tic("generateAllCombinationBinary")  
+   initialStates <- generateAllCombinationBinary(hif1a.net$genes)
+toc()
+tic("genereateBoolNetTimeseries") 
+   trainingseries <- genereateBoolNetTimeseries(hif1a.net,
+                                             initialStates,43,
+                                             type = "synchronous")
+toc()
+tic("generateFBMNetwork") 
+FBNcellcyclenetwork <- generateFBMNetwork(timeseries_data = trainingseries,
+                                 maxK = 4,
+                                 max_deep_temporal = 1,
+                                 useParallel = FALSE,
+                                 verbose = TRUE)
+toc()
+toc()
+
+print(FBNcellcyclenetwork)
+```
+
+
+```{r, out.width = "100%"}
+   resultfile <- reconstructTimeseries(FBNcellcyclenetwork,
+                                    initialStates,
+                                    type = "synchronous",
+                                    maxTimepoints = 43,
+                                    useParallel = FALSE)
+   similarreport <- generateSimilaryReport(trainingseries,resultfile)
+   print(paste("ErrorRate=",similarreport$ErrorRate,sep = "",collapse = ""))
+   print(paste("AccurateRate=",similarreport$AccurateRate,sep = "",collapse = ""))
+   print(paste("MissMatchedRate=",similarreport$MissMatchedRate,sep = "",collapse = ""))
+   print(paste("PerfectMatchedRate=",similarreport$PerfectMatchedRate,sep = "",collapse = ""))
+   #get attractors
+   #genes <- rownames(trainingseries[[1]])
+   #attractor <- searchForAttractors(FBNcellcyclenetwork,initialStates,genes)
+   print(attractor)
+   #display the dynamic trajectory of the attactor 2
+   #FBNNetwork.Graph.DrawAttractor(FBNcellcyclenetwork,attractor,1)
 ```
 
 ```{r, out.width = "100%"}

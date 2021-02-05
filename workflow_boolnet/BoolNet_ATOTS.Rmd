@@ -43,7 +43,7 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 
 
 ```{r}
-net <- loadNetwork("ATOTS.bn")
+net <- loadNetwork("../data/ATOTS.bn")
 net
 ```
 

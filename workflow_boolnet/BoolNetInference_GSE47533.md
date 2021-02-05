@@ -433,7 +433,7 @@ sink()}, silent = T)
 ```
 
 ``` r
-net <- loadNetwork("ATOTS_inferred.bn")
+net <- loadNetwork("../data/ATOTS_inferred.bn")
 print(net)
 ```
 
