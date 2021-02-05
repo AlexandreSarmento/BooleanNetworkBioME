@@ -1,5 +1,5 @@
 ---
-title: "BoolNet"
+title: "Theoretical Network: BoolNet"
 output:
   pdf_document: default
   github_document: 
@@ -43,7 +43,7 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 
 
 ```{r}
-net <- loadNetwork("../data/reduced_HIFaxis.bn")
+net <- loadNetwork("ATOTS.bn")
 net
 ```
 
@@ -51,6 +51,9 @@ net
 ```{r}
 HIFaxis.p <- plotNetworkWiring(net, plotIt=F)
 plot(HIFaxis.p, vertex.label.color="#440154ff",  vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="HIF axis Network\n Theoretical")
+
+plot(HIFaxis.p, vertex.label.color="#440154ff",  vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle,
      main="HIF axis Network\n Theoretical")
 ```
 
@@ -68,16 +71,16 @@ par(mfrow=c(1, length(table(sapply(attr.syn$attractors,
 
 plotAttractors(attr.syn)
 
-# plot attractors in "graph" mode
-par(mfrow=c(1, length(attr.syn$attractors)))
-plotAttractors(attr.syn, mode="graph")
-
-# identify asynchronous attractors
-attr.asyn <- getAttractors(net, type="asynchronous")
-
-# plot attractors in "graph" mode
-par(mfrow=c(1, length(attr.asyn$attractors)))
-plotAttractors(attr.asyn, mode="graph")
+# # plot attractors in "graph" mode
+# par(mfrow=c(1, length(attr.syn$attractors)))
+# plotAttractors(attr.syn, mode="graph")
+# 
+# # identify asynchronous attractors
+# attr.asyn <- getAttractors(net, type="asynchronous")
+# 
+# # plot attractors in "graph" mode
+# par(mfrow=c(1, length(attr.asyn$attractors)))
+# plotAttractors(attr.asyn, mode="graph")
 ```
 
 ```{r }

@@ -57,7 +57,7 @@ package.check <- lapply(packages_cran, FUN = function(x) {
 #     library(x, character.only = TRUE)
 #   }
 # })
-rm(package.check, packages_bioconductor, packages_cran)
+rm(package.check, packages_cran)
 ```
 
 <!-- ```{r} -->
@@ -158,7 +158,7 @@ binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>
   data.frame(.)  %>% 
   aggregate(., list(symbol = breast1_MCF7$symbol), mean) %>% 
   mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>% 
-  rbind(., c("O2", 1,0,0,0)) %>% 
+  #rbind(., c("O2", 1,0,0,0)) %>%  # removing O2
   knitr::kable(.)
 ```
 
@@ -172,7 +172,7 @@ binNet <- function(b){
   as.data.frame(.)  %>% 
   aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
   mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
-  rbind(., c("O2", 1,0,0,0)) %>% 
+  #rbind(., c("O2", 1,0,0,0)) %>%  # removing O2
     rename_at(vars(data.GSE47533$codes[cols] ),
             ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
                     data.GSE47533$time[cols],".",
@@ -226,18 +226,18 @@ mean.net <- reconstructNetwork(breast_MCF7.mean,
 
 mean.p <- plotNetworkWiring(mean.net, plotIt=F)
 
-# Mean of replicate breast cancer net without O2 :
-mean.nox.net <- reconstructNetwork(breast_MCF7.mean[c(1:5),],
-                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-
-mean.nox.p <- plotNetworkWiring(mean.nox.net, plotIt=F)
+# # Mean of replicate breast cancer net without O2 :
+# mean.nox.net <- reconstructNetwork(breast_MCF7.mean[c(1:5),],
+#                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+# 
+# mean.nox.p <- plotNetworkWiring(mean.nox.net, plotIt=F)
 
 # Mean of replicate breast cancer net with only Hypoxia state:
-
-mean.hyp.net <- reconstructNetwork(breast_MCF7.mean[,c("Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC")],
-                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
-
-mean.hyp.p <- plotNetworkWiring(mean.hyp.net, plotIt=F)
+# 
+# mean.hyp.net <- reconstructNetwork(breast_MCF7.mean[,c("Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC")],
+#                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+# 
+# mean.hyp.p <- plotNetworkWiring(mean.hyp.net, plotIt=F)
 
 ```
 
@@ -255,22 +255,35 @@ breast_MCF7.2.p <- plotNetworkWiring(breast_MCF7.2.net, plotIt=F)
 breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
 ```
 
-```{r}
-# MCF7 breast - 4 steps, replicate 1
-print(breast_MCF7.1.net)
+<!-- ```{r} -->
+<!-- # MCF7 breast - 4 steps, replicate 1 -->
+<!-- print(breast_MCF7.1.net) -->
 
-# MCF7 breast - 4 steps, replicate 2
-print(breast_MCF7.2.net)
+<!-- # MCF7 breast - 4 steps, replicate 2 -->
+<!-- print(breast_MCF7.2.net) -->
 
-# MCF7 breast - 4 steps, replicate 3
-print(breast_MCF7.3.net)
+<!-- # MCF7 breast - 4 steps, replicate 3 -->
+<!-- print(breast_MCF7.3.net) -->
 
-# MCF7 breast - 4 steps, all replicates
-print(all.nets)
+<!-- # MCF7 breast - 4 steps, all replicates -->
+<!-- print(all.nets) -->
 
-# MCF7 breast - 4 steps, all replicates
-print(mean.net)
-```
+<!-- # MCF7 breast - 4 steps, all replicates -->
+<!-- print(mean.net) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- par(mfrow = c(1,1)) -->
+<!-- plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+<!--      main="MCF7 breast\n 4 time-points, all replicates") -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- par(mfrow = c(1,1)) -->
+<!-- plot(mean.hyp.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle,# edge.curved=.3, -->
+<!--      main="MCF7 breast\n 3 time-points, without Normoxia time-point") -->
+<!-- ``` -->
 
 
 ```{r}
@@ -284,12 +297,6 @@ plot(breast_MCF7.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", 
      main="MCF7 breast\n 4 time-points, replicate 3")
 ```
 
-```{r}
-par(mfrow = c(1,1))
-plot(all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 4 time-points, all replicates")
-```
-
 
 ```{r}
 par(mfrow = c(1,1))
@@ -298,14 +305,45 @@ plot(mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.fr
 ```
 
 ```{r}
-par(mfrow = c(1,1))
-plot(mean.nox.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 4 time-points, without O2")
+print(mean.net)
+```
+
+<!-- ```{r} -->
+<!-- par(mfrow = c(1,1)) -->
+<!-- plot(mean.nox.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+<!--      main="MCF7 breast\n 4 time-points, without O2") -->
+<!-- ``` -->
+
+
+```{r results='hide'}
+
+# sink("ATOTS_infered.bn")
+# cat("targets, factors\n")
+# cat("EP300, (TP53 & !VHL) | (!TP53 & VHL) | (TP53 & !VHL) | (!HIF1A & TP53) |  (!HIF1A & TP53) | (HIF1A & !TP53) | (!EP300 & !VHL) | (!EP300 & !VHL) | (EP300 & VHL) | (!EP300 & !HIF1A) | (EP300 & HIF1A)\n")
+# cat("HIF1A, !TP53 | EP300\n")
+# cat("MDM2, TP53 & !VHL\n")
+# cat("TP53, VHL | HIF1A\n")
+# cat("VHL, !TP53 | !EP300\n")
+# sink()
+try({
+sink("ATOTS_infered.bn")
+cat("targets, factors\n")
+cat("EP300, (!HIF1A & TP53) | (HIF1A & !TP53)\n")
+cat("HIF1A, EP300\n")
+cat("MDM2, EP300\n")
+cat("TP53, HIF1A\n")
+cat("VHL, !TP53\n")
+sink()}, silent = T)
+```
+
+```{r}
+net <- loadNetwork("ATOTS_infered.bn")
+print(net)
 ```
 
 
 ```{r}
-par(mfrow = c(1,1))
-plot(mean.hyp.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MCF7 breast\n 3 time-points, without Normoxia time-point")
+
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn)
 ```

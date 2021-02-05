@@ -1,7 +1,7 @@
 targets,factors
-HIF1a, !VHL | (!p53 & Mdm2)
-p53, !Mdm2 | VHL 
-Mdm2, p53 & !VHL
-VHL, HIF1a & !p53
-p300, ((p53 & HIF1a) & !VHL) | (!(p53 & HIF1a) & VHL)
-APOP , p53 & p300 & (!HIF1a | !VHL | !Mdm2)
+EP300, ((TP53 & HIF1A) & !VHL) | (!(TP53 & HIF1A) & VHL)
+HIF1A, !VHL | (!TP53 & MDM2)
+MDM2, TP53 & !VHL
+TP53, !MDM2 | VHL 
+VHL, HIF1A & !TP53
+APOP, TP53 & EP300 & (!HIF1A | !VHL | !MDM2)
