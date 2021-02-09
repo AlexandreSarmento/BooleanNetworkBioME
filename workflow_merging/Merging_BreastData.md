@@ -269,19 +269,11 @@ head(expr.GSE47533.hif.bin) %>%
 
 |       | Norm.0.1 | Norm.0.2 | Norm.0.3 | Hypo.16h.1 | Hypo.16h.2 | Hypo.16h.3 | Hypo.32h.1 | Hypo.32h.2 | Hypo.32h.3 | Hypo.48h.1 | Hypo.48h.2 | Hypo.48h.3 | threshold | p.value | symbol |
 | :---- | -------: | -------: | -------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | --------: | ------: | :----- |
-<<<<<<< HEAD
-| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.807 | BAD    |
+| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.794 | BAD    |
 | BAX   |        0 |        1 |        1 |          0 |          0 |          0 |          1 |          0 |          0 |          1 |          1 |          1 |  7.978194 |   1.000 | BAX    |
-| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.926 | BCL2   |
+| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.933 | BCL2   |
 | BIK   |        0 |        0 |        0 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |  8.755742 |   0.001 | BIK    |
-| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.956 | BIM    |
-=======
-| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.768 | BAD    |
-| BAX   |        0 |        1 |        1 |          0 |          0 |          0 |          1 |          0 |          0 |          1 |          1 |          1 |  7.978194 |   1.000 | BAX    |
-| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.913 | BCL2   |
-| BIK   |        0 |        0 |        0 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |  8.755742 |   0.001 | BIK    |
-| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.958 | BIM    |
->>>>>>> 2d162117bdfc98d6ccbc838ebeaf5c9c28dd4b78
+| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.960 | BIM    |
 | CASP3 |        1 |        1 |        1 |          0 |          0 |          1 |          1 |          0 |          0 |          0 |          0 |          0 |  7.799389 |   0.001 | CASP3  |
 
 ``` r
@@ -402,7 +394,6 @@ other words, we can assume the normality.
 ``` r
 library(rstatix)
 
-<<<<<<< HEAD
 rstatix::mshapiro_test(expr.EGEOD18494.hif) %>% 
   knitr::kable(.)
 ```
@@ -410,18 +401,6 @@ rstatix::mshapiro_test(expr.EGEOD18494.hif) %>%
 | statistic | p.value |
 | --------: | ------: |
 | 0.3598048 |   2e-07 |
-=======
-rstatix::mshapiro_test(expr.EGEOD18494.hif)
-```
-
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":["statistic"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["p.value"],"name":[2],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.3598048","2":"1.788286e-07","_row":"W"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
->>>>>>> 2d162117bdfc98d6ccbc838ebeaf5c9c28dd4b78
 
 ``` r
 library("pheatmap")
@@ -624,7 +603,6 @@ From the output, the p-value > 0.05 implying that the distribution of the data a
 ```r
 library(rstatix)
 
-<<<<<<< HEAD
 rstatix::mshapiro_test(expr.GSE47533.hif)  %>% 
   knitr::kable(.)
 ````
@@ -632,18 +610,6 @@ rstatix::mshapiro_test(expr.GSE47533.hif)  %>%
 | statistic | p.value |
 | --------: | ------: |
 | 0.3834331 |   3e-07 |
-=======
-rstatix::mshapiro_test(expr.GSE47533.hif)
-````
-
-<div data-pagedtable="false">
-
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":["statistic"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["p.value"],"name":[2],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.3834331","2":"2.644501e-07","_row":"W"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-
-</div>
->>>>>>> 2d162117bdfc98d6ccbc838ebeaf5c9c28dd4b78
 
 ``` r
 library("pheatmap")

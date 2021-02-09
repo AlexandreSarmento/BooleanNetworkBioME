@@ -434,12 +434,8 @@ From the output, the p-value > 0.05 implying that the distribution of the data a
 
 library(rstatix)
 
-<<<<<<< HEAD
 rstatix::mshapiro_test(expr.EGEOD18494.hif) %>% 
   knitr::kable(.)
-=======
-rstatix::mshapiro_test(expr.EGEOD18494.hif)
->>>>>>> 2d162117bdfc98d6ccbc838ebeaf5c9c28dd4b78
 ```
 
 
@@ -621,12 +617,8 @@ From the output, the p-value > 0.05 implying that the distribution of the data a
 
 library(rstatix)
 
-<<<<<<< HEAD
 rstatix::mshapiro_test(expr.GSE47533.hif)  %>% 
   knitr::kable(.)
-=======
-rstatix::mshapiro_test(expr.GSE47533.hif)
->>>>>>> 2d162117bdfc98d6ccbc838ebeaf5c9c28dd4b78
 ```
 
 
