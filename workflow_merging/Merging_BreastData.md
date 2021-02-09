@@ -269,11 +269,11 @@ head(expr.GSE47533.hif.bin) %>%
 
 |       | Norm.0.1 | Norm.0.2 | Norm.0.3 | Hypo.16h.1 | Hypo.16h.2 | Hypo.16h.3 | Hypo.32h.1 | Hypo.32h.2 | Hypo.32h.3 | Hypo.48h.1 | Hypo.48h.2 | Hypo.48h.3 | threshold | p.value | symbol |
 | :---- | -------: | -------: | -------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | --------: | ------: | :----- |
-| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.822 | BAD    |
+| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.768 | BAD    |
 | BAX   |        0 |        1 |        1 |          0 |          0 |          0 |          1 |          0 |          0 |          1 |          1 |          1 |  7.978194 |   1.000 | BAX    |
-| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.912 | BCL2   |
+| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.913 | BCL2   |
 | BIK   |        0 |        0 |        0 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |  8.755742 |   0.001 | BIK    |
-| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.962 | BIM    |
+| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.958 | BIM    |
 | CASP3 |        1 |        1 |        1 |          0 |          0 |          1 |          1 |          0 |          0 |          0 |          0 |          0 |  7.799389 |   0.001 | CASP3  |
 
 ``` r
@@ -385,6 +385,26 @@ plot_grid(p.MDA, p.MCF7, labels = c('A', 'B'))
 
 # Heatmaps - EGEOD18494
 
+## Multivariate Shapiro-Wilk normality test
+
+From the output, the p-value \> 0.05 implying that the distribution of
+the data are not significantly different from normal distribution. In
+other words, we can assume the normality.
+
+``` r
+library(rstatix)
+
+rstatix::mshapiro_test(expr.EGEOD18494.hif)
+```
+
+<div data-pagedtable="false">
+
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["statistic"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["p.value"],"name":[2],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.3598048","2":"1.788286e-07","_row":"W"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+
+</div>
+
 ``` r
 library("pheatmap")
 library("ComplexHeatmap")
@@ -435,7 +455,7 @@ pheatmap(dists, col = (hmcol),
          main = "Clustering of Samples (EGEOD18494)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-13-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 dists <- as.matrix(dist(expr.EGEOD18494.hif, method = "euclidean")) 
@@ -454,7 +474,7 @@ pheatmap(dists, #row = (hmcol),
          main = "Clustering of Gene Expression \n Euclidian Distance  (EGEOD18494)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-14-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
@@ -527,7 +547,7 @@ gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable),
                         nrow = 2 , labels=c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-15-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 data.EGEOD18494$time <- factor(data.EGEOD18494$time,  levels =  c("control", "4h" , "8h" , "12h 4h"))
@@ -542,6 +562,7 @@ pheatmap(dists, #row = (hmcol),
          #annotation_col = annotation_for_heatmap,
          #annotation_colors = ann_colors,
          legend = TRUE, 
+         display_numbers = T,
          treeheight_row = 0,
          legend_breaks = c(min(dists, na.rm = TRUE), 
                            max(dists, na.rm = TRUE)), 
@@ -549,9 +570,52 @@ pheatmap(dists, #row = (hmcol),
          main = "Clustering of Gene Expression \n Spearman Correlation (EGEOD18494)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-16-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+dists <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "pearson")
+rownames(dists) <- rownames(expr.EGEOD18494.hif)
+hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
+colnames(dists) <- rownames(expr.EGEOD18494.hif)
+diag(dists) <- NA 
+
+pheatmap(dists, #row = (hmcol), 
+         #annotation_col = annotation_for_heatmap,
+         #annotation_colors = ann_colors,
+         legend = TRUE, 
+         display_numbers = T,
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("-1", "1")),
+         main = "Clustering of Gene Expression \n Spearman Correlation (EGEOD18494)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-18-1.png)<!-- -->
+
+```` 
 
 # Heatmaps - GSE47533
+
+## Multivariate Shapiro-Wilk normality test
+
+From the output, the p-value > 0.05 implying that the distribution of the data are not significantly different from normal distribution. In other words, we can assume the normality.
+
+
+
+```r
+library(rstatix)
+
+rstatix::mshapiro_test(expr.GSE47533.hif)
+````
+
+<div data-pagedtable="false">
+
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["statistic"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["p.value"],"name":[2],"type":["dbl"],"align":["right"]}],"data":[{"1":"0.3834331","2":"2.644501e-07","_row":"W"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+
+</div>
 
 ``` r
 library("pheatmap")
@@ -601,7 +665,7 @@ pheatmap(dists, col = (hmcol),
          main = "Clustering of Samples (GSE47533)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-17-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
 dists <- as.matrix(dist(expr.GSE47533.hif, method = "euclidean")) 
@@ -618,7 +682,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Euclidian Distance  (GSE47533)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-18-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
@@ -663,7 +727,7 @@ gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable),
                         nrow = 2 , labels=c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-19-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 dists <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "spearman")
@@ -681,7 +745,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Spearman Correlation (GSE47533)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-20-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 dists <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "pearson")
@@ -699,7 +763,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Pearson Correlation (GSE47533)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-21-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-24-1.png)<!-- -->
 
 # Heatmaps - All datasets Breast Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
 
@@ -739,7 +803,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Euclidian Distance  (All 3 datasets, breast cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-23-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
@@ -792,7 +856,7 @@ gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable),
                         nrow = 2 , labels=c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-24-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 dists <- cor(t(expr.all.hif), use = "pairwise.complete.obs", method = "spearman")
@@ -809,7 +873,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Spearman Correlation (All 3 datasets, breast cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-25-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-28-1.png)<!-- -->
 
 # Heatmaps - All datasets All Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
 
@@ -844,7 +908,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Euclidian Distance  (All 3 datasets, all cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-27-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
@@ -893,7 +957,7 @@ gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable),
                         nrow = 2 , labels=c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-28-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 dists <- cor(t(expr.all.hif), use = "pairwise.complete.obs", method = "spearman")
@@ -910,4 +974,4 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Spearman Correlation (All 3 datasets, all cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-29-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-32-1.png)<!-- -->
