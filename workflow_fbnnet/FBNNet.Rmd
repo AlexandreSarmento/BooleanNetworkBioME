@@ -213,15 +213,16 @@ print(FBNcellcyclenetwork)
    print(paste("MissMatchedRate=",similarreport$MissMatchedRate,sep = "",collapse = ""))
    print(paste("PerfectMatchedRate=",similarreport$PerfectMatchedRate,sep = "",collapse = ""))
    #get attractors
-   #genes <- rownames(trainingseries[[1]])
-   #attractor <- searchForAttractors(FBNcellcyclenetwork,initialStates,genes)
+   genes <- rownames(trainingseries[[1]])
+   attractor <- searchForAttractors(FBNcellcyclenetwork,initialStates,genes)
    print(attractor)
    #display the dynamic trajectory of the attactor 2
-   #FBNNetwork.Graph.DrawAttractor(FBNcellcyclenetwork,attractor,1)
+   FBNNetwork.Graph.DrawAttractor(FBNcellcyclenetwork,attractor,1)
 ```
 
 ```{r, out.width = "100%"}
 
-FBNNet::FBNNetwork.Graph(FBNcellcyclenetwork)
+FBNNet::FBNNetwork.Graph(FBNcellcyclenetwork,  fromTimePoint = 1,
+  toTimePoint = 2)
 
 ```

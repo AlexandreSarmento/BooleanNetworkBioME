@@ -269,11 +269,11 @@ head(expr.GSE47533.hif.bin) %>%
 
 |       | Norm.0.1 | Norm.0.2 | Norm.0.3 | Hypo.16h.1 | Hypo.16h.2 | Hypo.16h.3 | Hypo.32h.1 | Hypo.32h.2 | Hypo.32h.3 | Hypo.48h.1 | Hypo.48h.2 | Hypo.48h.3 | threshold | p.value | symbol |
 | :---- | -------: | -------: | -------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | --------: | ------: | :----- |
-| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.796 | BAD    |
+| BAD   |        0 |        0 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  7.925009 |   0.822 | BAD    |
 | BAX   |        0 |        1 |        1 |          0 |          0 |          0 |          1 |          0 |          0 |          1 |          1 |          1 |  7.978194 |   1.000 | BAX    |
-| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.923 | BCL2   |
+| BCL2  |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |          0 |  7.272830 |   0.912 | BCL2   |
 | BIK   |        0 |        0 |        0 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |          1 |  8.755742 |   0.001 | BIK    |
-| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.963 | BIM    |
+| BIM   |        1 |        1 |        0 |          1 |          0 |          0 |          1 |          0 |          1 |          1 |          0 |          1 | 10.921161 |   0.962 | BIM    |
 | CASP3 |        1 |        1 |        1 |          0 |          0 |          1 |          1 |          0 |          0 |          0 |          0 |          0 |  7.799389 |   0.001 | CASP3  |
 
 ``` r
@@ -673,6 +673,7 @@ diag(dists) <- NA
 
 pheatmap(dists, 
          legend = TRUE, 
+         display_numbers = T,
          treeheight_row = 0,
          legend_breaks = c(min(dists, na.rm = TRUE), 
                            max(dists, na.rm = TRUE)), 
@@ -681,6 +682,24 @@ pheatmap(dists,
 ```
 
 ![](figs/BoolNetInfer-unnamed-chunk-20-1.png)<!-- -->
+
+``` r
+dists <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "pearson")
+rownames(dists) <- rownames(expr.GSE47533.hif)
+colnames(dists) <- rownames(expr.GSE47533.hif)
+diag(dists) <- NA 
+
+pheatmap(dists, 
+         legend = TRUE, 
+         display_numbers = T,
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("-1", "1")),
+         main = "Clustering of Gene Expression \n Pearson Correlation (GSE47533)")
+```
+
+![](figs/BoolNetInfer-unnamed-chunk-21-1.png)<!-- -->
 
 # Heatmaps - All datasets Breast Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
 
@@ -720,7 +739,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Euclidian Distance  (All 3 datasets, breast cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-22-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
@@ -773,7 +792,7 @@ gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable),
                         nrow = 2 , labels=c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-23-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 dists <- cor(t(expr.all.hif), use = "pairwise.complete.obs", method = "spearman")
@@ -790,7 +809,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Spearman Correlation (All 3 datasets, breast cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-24-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-25-1.png)<!-- -->
 
 # Heatmaps - All datasets All Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
 
@@ -825,7 +844,7 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Euclidian Distance  (All 3 datasets, all cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-26-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 #---------------------------------------------------------------------------------
@@ -874,7 +893,7 @@ gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable),
                         nrow = 2 , labels=c('A', 'B'))
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-27-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 dists <- cor(t(expr.all.hif), use = "pairwise.complete.obs", method = "spearman")
@@ -891,4 +910,4 @@ pheatmap(dists,
          main = "Clustering of Gene Expression \n Spearman Correlation (All 3 datasets, all cell-lines)")
 ```
 
-![](figs/BoolNetInfer-unnamed-chunk-28-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-29-1.png)<!-- -->
