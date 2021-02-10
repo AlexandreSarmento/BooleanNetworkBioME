@@ -326,7 +326,7 @@ print(mean.net)
 # cat("VHL, !TP53 | !EP300\n")
 # sink()
 try({
-sink("ATOTS_inferred.bn")
+sink("../data/ATOTS_inferred_GSE47533.bn")
 cat("targets, factors\n")
 cat("EP300, (!HIF1A & TP53) | (HIF1A & !TP53)\n")
 cat("HIF1A, EP300\n")
@@ -337,7 +337,7 @@ sink()}, silent = T)
 ```
 
 ```{r}
-net <- loadNetwork("../data/ATOTS_inferred.bn")
+net <- loadNetwork("../data/ATOTS_inferred_GSE47533.bn")
 print(net)
 ```
 
