@@ -162,7 +162,10 @@ binarizeTimeSeries(breast1_MCF7[,-1], method="kmeans")$binarizedMeasurements  %>
   knitr::kable(.)
 ```
 
+
+
 ```{r}
+
 # Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
 binNet <- function(b){
   
@@ -181,37 +184,88 @@ binNet <- function(b){
   column_to_rownames("symbol")
   
 }
+```
+
+
+```{r}
+# Function to calculate the mean and binarize after, according an consensus mean of probes 
+
+meanBinNet <- function(b){
+  
+  cols <- data.GSE47533$codes %in% names(b)
+  
+  b <-b %>% 
+  rename_at(vars(data.GSE47533$codes[cols] ),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2), ".",
+                    data.GSE47533$rep[cols])) %>% 
+  mutate(No.0.MC = rowMeans(dplyr::select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.16h.MC = rowMeans(dplyr::select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.32h.MC = rowMeans(dplyr::select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.48h.MC = rowMeans(dplyr::select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
+  dplyr::select(c("symbol", "No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC")) 
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  #rbind(., c("O2", 1,0,0,0)) %>% 
+  column_to_rownames("symbol")
+  
+}
+
+```
+
+
+```{r}
 
 breast_MCF7.1 <- 
 expr.GSE47533.hif %>% 
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 1]))  %>% 
   binNet(.) 
 
+breast_MCF7.1 %>% 
+  knitr::kable(.)
+
 breast_MCF7.2 <- 
 expr.GSE47533.hif %>% 
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 2]))  %>% 
   binNet(.) 
+
+breast_MCF7.2  %>% 
+  knitr::kable(.)
 
 breast_MCF7.3 <- 
 expr.GSE47533.hif %>% 
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 3]))  %>% 
   binNet(.) 
 
+breast_MCF7.3 %>% 
+  knitr::kable(.)
+
 breast_MCF7.mean <- 
 cbind(breast_MCF7.1, breast_MCF7.2,breast_MCF7.3) %>%
   tibble::rownames_to_column('gene') %>%
   mutate_at(vars(-gene), as.numeric) %>% 
-  mutate(No.0.MC = rowMeans(select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
-  mutate(Hy.16h.MC = rowMeans(select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
-  mutate(Hy.32h.MC = rowMeans(select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
-  mutate(Hy.48h.MC = rowMeans(select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
+  mutate(No.0.MC = rowMeans(dplyr::select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.16h.MC = rowMeans(dplyr::select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.32h.MC = rowMeans(dplyr::select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.48h.MC = rowMeans(dplyr::select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
   dplyr::select(c("No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC", "gene")) %>%
   mutate_at(c("No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)  
   tibble::column_to_rownames('gene')
 
+breast_MCF7.mean %>% 
+  knitr::kable(.)
 
+breast.meanBin <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes)) %>% meanBinNet(.) 
 
-  
+breast.meanBin %>% 
+  knitr::kable(.)
+
 # All breast cancer nets merged:
 all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3),
                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
@@ -219,12 +273,7 @@ all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3)
 all.p <- plotNetworkWiring(all.nets, plotIt=F)
 
 
-  
-# Mean of replicate breast cancer net :
-mean.net <- reconstructNetwork(breast_MCF7.mean,
-                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
-mean.p <- plotNetworkWiring(mean.net, plotIt=F)
 
 # # Mean of replicate breast cancer net without O2 :
 # mean.nox.net <- reconstructNetwork(breast_MCF7.mean[c(1:5),],
@@ -238,6 +287,22 @@ mean.p <- plotNetworkWiring(mean.net, plotIt=F)
 #                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 # 
 # mean.hyp.p <- plotNetworkWiring(mean.hyp.net, plotIt=F)
+
+  
+# Mean AFTER binarize the replicates of breast cancer net :
+
+mean.net <- reconstructNetwork(breast_MCF7.mean,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+mean.p <- plotNetworkWiring(mean.net, plotIt=F)
+
+
+# Mean BEFORE binarize the replicates of breast cancer net :
+
+meanBin.net <- reconstructNetwork(breast.meanBin,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+meanBin.p <- plotNetworkWiring(meanBin.net, plotIt=F)
 
 ```
 
@@ -285,6 +350,7 @@ breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
 <!--      main="MCF7 breast\n 3 time-points, without Normoxia time-point") -->
 <!-- ``` -->
 
+# Mean AFTER binarize the replicates of breast cancer net :
 
 ```{r}
 # MCF7 breast cancer - 4 time-points 
@@ -347,3 +413,43 @@ print(net)
 attr.syn <- getAttractors(net, type = "synchronous")
 plotAttractors(attr.syn)
 ```
+
+
+
+# Mean BEFORE binarize the replicates of breast cancer net :
+
+```{r}
+par(mfrow = c(1,1))
+plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 time-points, Mean BEFORE binarize replicates")
+```
+
+```{r}
+print(meanBin.net)
+```
+
+<!-- ```{r} -->
+
+<!-- try({ -->
+<!-- sink("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
+<!-- cat("targets, factors\n") -->
+<!-- cat("EP300, (!TP53 | HIF1A) \n") -->
+<!-- cat("HIF1A,  !EP300 \n") -->
+<!-- cat("MDM2, (TP53 | !HIF1A)\n") -->
+<!-- cat("TP53, EP300\n") -->
+<!-- cat("VHL, (!TP53 | HIF1A)\n") -->
+<!-- sink()}, silent = T) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- net <- loadNetwork("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
+<!-- print(net) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- attr.syn <- getAttractors(net, type = "synchronous") -->
+<!-- plotAttractors(attr.syn) -->
+<!-- ``` -->

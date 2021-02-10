@@ -228,37 +228,134 @@ binNet <- function(b){
   column_to_rownames("symbol")
   
 }
+```
 
+``` r
+# Function to calculate the mean and binarize after, according an consensus mean of probes 
+
+meanBinNet <- function(b){
+  
+  cols <- data.GSE47533$codes %in% names(b)
+  
+  b <-b %>% 
+  rename_at(vars(data.GSE47533$codes[cols] ),
+            ~paste0(substr(data.GSE47533$condition[cols],1,2),".",
+                    data.GSE47533$time[cols],".",
+                    substr(data.GSE47533$cell_line[cols],1,2), ".",
+                    data.GSE47533$rep[cols])) %>% 
+  mutate(No.0.MC = rowMeans(dplyr::select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.16h.MC = rowMeans(dplyr::select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.32h.MC = rowMeans(dplyr::select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.48h.MC = rowMeans(dplyr::select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
+  dplyr::select(c("symbol", "No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC")) 
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
+  as.data.frame(.)  %>% 
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  #rbind(., c("O2", 1,0,0,0)) %>% 
+  column_to_rownames("symbol")
+  
+}
+```
+
+``` r
 breast_MCF7.1 <- 
 expr.GSE47533.hif %>% 
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 1]))  %>% 
   binNet(.) 
 
+breast_MCF7.1 %>% 
+  knitr::kable(.)
+```
+
+|       | No.0.MC.1 | Hy.16h.MC.1 | Hy.32h.MC.1 | Hy.48h.MC.1 |
+| :---- | --------: | ----------: | ----------: | ----------: |
+| EP300 |         0 |           1 |           0 |           0 |
+| HIF1A |         1 |           0 |           0 |           1 |
+| MDM2  |         1 |           0 |           1 |           1 |
+| TP53  |         0 |           1 |           0 |           0 |
+| VHL   |         1 |           1 |           0 |           1 |
+
+``` r
 breast_MCF7.2 <- 
 expr.GSE47533.hif %>% 
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 2]))  %>% 
   binNet(.) 
 
+breast_MCF7.2  %>% 
+  knitr::kable(.)
+```
+
+|       | No.0.MC.2 | Hy.16h.MC.2 | Hy.32h.MC.2 | Hy.48h.MC.2 |
+| :---- | --------: | ----------: | ----------: | ----------: |
+| EP300 |         0 |           0 |           1 |           0 |
+| HIF1A |         1 |           0 |           0 |           1 |
+| MDM2  |         0 |           1 |           0 |           0 |
+| TP53  |         1 |           1 |           0 |           0 |
+| VHL   |         1 |           0 |           0 |           1 |
+
+``` r
 breast_MCF7.3 <- 
 expr.GSE47533.hif %>% 
   dplyr::select(c("symbol", data.GSE47533$codes[data.GSE47533$rep == 3]))  %>% 
   binNet(.) 
 
+breast_MCF7.3 %>% 
+  knitr::kable(.)
+```
+
+|       | No.0.MC.3 | Hy.16h.MC.3 | Hy.32h.MC.3 | Hy.48h.MC.3 |
+| :---- | --------: | ----------: | ----------: | ----------: |
+| EP300 |         0 |           0 |           1 |           0 |
+| HIF1A |         1 |           0 |           0 |           1 |
+| MDM2  |         0 |           0 |           0 |           1 |
+| TP53  |         1 |           1 |           1 |           0 |
+| VHL   |         1 |           0 |           0 |           1 |
+
+``` r
 breast_MCF7.mean <- 
 cbind(breast_MCF7.1, breast_MCF7.2,breast_MCF7.3) %>%
   tibble::rownames_to_column('gene') %>%
   mutate_at(vars(-gene), as.numeric) %>% 
-  mutate(No.0.MC = rowMeans(select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
-  mutate(Hy.16h.MC = rowMeans(select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
-  mutate(Hy.32h.MC = rowMeans(select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
-  mutate(Hy.48h.MC = rowMeans(select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
+  mutate(No.0.MC = rowMeans(dplyr::select(.,starts_with("No.0.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.16h.MC = rowMeans(dplyr::select(.,starts_with("Hy.16h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.32h.MC = rowMeans(dplyr::select(.,starts_with("Hy.32h.MC")), na.rm = TRUE)) %>% 
+  mutate(Hy.48h.MC = rowMeans(dplyr::select(.,starts_with("Hy.48h.MC")), na.rm = TRUE)) %>%
   dplyr::select(c("No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC", "gene")) %>%
   mutate_at(c("No.0.MC", "Hy.16h.MC", "Hy.32h.MC", "Hy.48h.MC"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)  
   tibble::column_to_rownames('gene')
 
+breast_MCF7.mean %>% 
+  knitr::kable(.)
+```
 
+|       | No.0.MC | Hy.16h.MC | Hy.32h.MC | Hy.48h.MC |
+| :---- | ------: | --------: | --------: | --------: |
+| EP300 |       0 |         0 |         1 |         0 |
+| HIF1A |       1 |         0 |         0 |         1 |
+| MDM2  |       0 |         0 |         0 |         1 |
+| TP53  |       1 |         1 |         0 |         0 |
+| VHL   |       1 |         0 |         0 |         1 |
 
-  
+``` r
+breast.meanBin <- 
+expr.GSE47533.hif %>% 
+  dplyr::select(c("symbol", data.GSE47533$codes)) %>% meanBinNet(.) 
+
+breast.meanBin %>% 
+  knitr::kable(.)
+```
+
+|       | No.0.MC | Hy.16h.MC | Hy.32h.MC | Hy.48h.MC |
+| :---- | ------: | --------: | --------: | --------: |
+| EP300 |       0 |         0 |         1 |         0 |
+| HIF1A |       1 |         0 |         0 |         1 |
+| MDM2  |       0 |         0 |         0 |         1 |
+| TP53  |       1 |         1 |         0 |         0 |
+| VHL   |       1 |         0 |         0 |         1 |
+
+``` r
 # All breast cancer nets merged:
 all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3),
                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
@@ -266,12 +363,7 @@ all.nets <- reconstructNetwork(list(breast_MCF7.1, breast_MCF7.2, breast_MCF7.3)
 all.p <- plotNetworkWiring(all.nets, plotIt=F)
 
 
-  
-# Mean of replicate breast cancer net :
-mean.net <- reconstructNetwork(breast_MCF7.mean,
-                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
-mean.p <- plotNetworkWiring(mean.net, plotIt=F)
 
 # # Mean of replicate breast cancer net without O2 :
 # mean.nox.net <- reconstructNetwork(breast_MCF7.mean[c(1:5),],
@@ -285,6 +377,22 @@ mean.p <- plotNetworkWiring(mean.net, plotIt=F)
 #                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 # 
 # mean.hyp.p <- plotNetworkWiring(mean.hyp.net, plotIt=F)
+
+  
+# Mean AFTER binarize the replicates of breast cancer net :
+
+mean.net <- reconstructNetwork(breast_MCF7.mean,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+mean.p <- plotNetworkWiring(mean.net, plotIt=F)
+
+
+# Mean BEFORE binarize the replicates of breast cancer net :
+
+meanBin.net <- reconstructNetwork(breast.meanBin,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
+
+meanBin.p <- plotNetworkWiring(meanBin.net, plotIt=F)
 ```
 
 # MCF7 breast cancer
@@ -344,6 +452,8 @@ breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
 
 <!-- ``` -->
 
+# Mean AFTER binarize the replicates of breast cancer net :
+
 ``` r
 # MCF7 breast cancer - 4 time-points 
 par(mfrow = c(1,3))
@@ -355,7 +465,7 @@ plot(breast_MCF7.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", 
      main="MCF7 breast\n 4 time-points, replicate 3")
 ```
 
-![](figs/GSE47533-unnamed-chunk-8-1.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(1,1))
@@ -363,7 +473,7 @@ plot(mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.fr
      main="MCF7 breast\n 4 time-points, Mean replicates")
 ```
 
-![](figs/GSE47533-unnamed-chunk-9-1.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 print(mean.net)
@@ -422,7 +532,7 @@ print(mean.net)
 # cat("VHL, !TP53 | !EP300\n")
 # sink()
 try({
-sink("ATOTS_inferred.bn")
+sink("../data/ATOTS_inferred_GSE47533.bn")
 cat("targets, factors\n")
 cat("EP300, (!HIF1A & TP53) | (HIF1A & !TP53)\n")
 cat("HIF1A, EP300\n")
@@ -433,7 +543,7 @@ sink()}, silent = T)
 ```
 
 ``` r
-net <- loadNetwork("../data/ATOTS_inferred.bn")
+net <- loadNetwork("../data/ATOTS_inferred_GSE47533.bn")
 print(net)
 ```
 
@@ -454,7 +564,7 @@ attr.syn <- getAttractors(net, type = "synchronous")
 plotAttractors(attr.syn)
 ```
 
-![](figs/GSE47533-unnamed-chunk-13-1.png)<!-- -->![](figs/GSE47533-unnamed-chunk-13-2.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-15-1.png)<!-- -->![](figs/GSE47533-unnamed-chunk-15-2.png)<!-- -->
 
     ## $`1`
     ##       Attr1.1
@@ -471,3 +581,88 @@ plotAttractors(attr.syn)
     ## MDM2        0       1       0       1       1       1       0
     ## TP53        0       0       1       0       1       1       1
     ## VHL         0       1       1       0       1       0       0
+
+# Mean BEFORE binarize the replicates of breast cancer net :
+
+``` r
+par(mfrow = c(1,1))
+plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 time-points, Mean BEFORE binarize replicates")
+```
+
+![](figs/GSE47533-unnamed-chunk-16-1.png)<!-- -->
+
+``` r
+print(meanBin.net)
+```
+
+    ## Probabilistic Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (TP53 & !VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!TP53 & VHL) | (TP53 & !VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!HIF1A & TP53) ( probability: 0.125, error: 0)
+    ## EP300 = (!HIF1A & TP53) | (HIF1A & !TP53) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !VHL) | (EP300 & VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !HIF1A) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !HIF1A) | (EP300 & HIF1A) ( probability: 0.125, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (!TP53) ( probability: 0.5, error: 0)
+    ## HIF1A = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (!TP53) ( probability: 0.5, error: 0)
+    ## MDM2 = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (VHL) ( probability: 0.5, error: 0)
+    ## TP53 = (HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (!TP53) ( probability: 0.5, error: 0)
+    ## VHL = (EP300) ( probability: 0.5, error: 0)
+
+<!-- ```{r} -->
+
+<!-- try({ -->
+
+<!-- sink("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
+
+<!-- cat("targets, factors\n") -->
+
+<!-- cat("EP300, (!TP53 | HIF1A) \n") -->
+
+<!-- cat("HIF1A,  !EP300 \n") -->
+
+<!-- cat("MDM2, (TP53 | !HIF1A)\n") -->
+
+<!-- cat("TP53, EP300\n") -->
+
+<!-- cat("VHL, (!TP53 | HIF1A)\n") -->
+
+<!-- sink()}, silent = T) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- net <- loadNetwork("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
+
+<!-- print(net) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- attr.syn <- getAttractors(net, type = "synchronous") -->
+
+<!-- plotAttractors(attr.syn) -->
+
+<!-- ``` -->
