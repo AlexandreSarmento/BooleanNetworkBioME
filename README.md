@@ -27,7 +27,7 @@ This project includes:
 
 # Others Datasets BoolNet Inference:
   * [Breast cell lines](workflow_boolnet/misc_analysis/BoolNetInference.md)		datasets merged / MDA-MB23, MCF7 / breast /	microarray, mRNA
-  * [E-GEOD-18494](workflow_boolnet/misc_analysis/BoolNetInference_EGEOD18494.md)	2012	/ HepG2, U87, MDA-MB231 / hepatoma, glioma, breast /	4h, 8h, 12h	/	microarray
+  * [E-GEOD-18494](workflow_boolnet/BoolNetInference_EGEOD18494.md)	2012	/ HepG2, U87, MDA-MB231 / hepatoma, glioma, breast /	4h, 8h, 12h	/	microarray
   * [GSE41491](workflow_boolnet/misc_analysis/BoolNetInference_GSE41491.md)	2012 / DU145, HT29, MCF7 /	prostate, colon, breast	/ 1h, 2h, 4h, 8h, 12h, 16h, 24h	/	microarray
   * [GSE52695](workflow_boolnet/misc_analysis/BoolNetInference_GSE52695.md)	2016	/ A2780	/ ovarian /	6h, 48h, 6d	/	rna-seq
 
