@@ -1,0 +1,6 @@
+targets,factors
+HIF1A, !VHL | (!(TP53 & EP300) & MDM2)
+TP53, !MDM2 & (VHL | HIF1A) 
+MDM2, TP53 & !VHL
+VHL, HIF1A & !TP53
+EP300, (TP53 & HIF1A) | VHL
