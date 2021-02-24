@@ -1166,7 +1166,7 @@ print(glioma.mean.net)
 try({
 sink("../data/ATOTS_inferred_EGEOD18494_glioma_meanAfter.bn")
 cat("targets, factors\n")
-cat("EP300, (!!TP53 | !EP300)\n")
+cat("EP300, (!TP53 | !EP300)\n")
 cat("HIF1A, MDM2\n")
 cat("MDM2, 0\n")
 cat("TP53, !MDM2\n")
@@ -1175,7 +1175,7 @@ sink()}, silent = T)
 ```
 
 ``` r
-net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_hepatoma_meanAfter.bn")
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_glioma_meanAfter.bn")
 print(net)
 ```
 
@@ -1185,34 +1185,26 @@ print(net)
     ## EP300 HIF1A MDM2 TP53 VHL
     ## 
     ## Transition functions:
-    ## EP300 = (VHL | !MDM2) | !EP300
-    ## HIF1A = (!VHL | MDM2 ) | EP300
-    ## MDM2 = (VHL | !MDM2) | !EP300
-    ## TP53 = 1
-    ## VHL = (!VHL | MDM2) | EP300
+    ## EP300 = (!TP53 | !EP300)
+    ## HIF1A = MDM2
+    ## MDM2 = 0
+    ## TP53 = !MDM2
+    ## VHL = HIF1A
     ## 
     ## Knocked-out and over-expressed genes:
-    ## TP53 = 1
+    ## MDM2 = 0
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
 plotAttractors(attr.syn, title = "U87 glioma, Mean After Binarize replicates")
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-49-1.png)<!-- -->![](figs/EGEOD18494-unnamed-chunk-49-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-49-1.png)<!-- -->
 
-    ## $`1`
-    ##       Attr1.1
-    ## EP300       1
-    ## HIF1A       1
-    ## MDM2        1
-    ## TP53        1
-    ## VHL         1
-    ## 
     ## $`2`
-    ##       Attr2.1 Attr2.2
-    ## EP300       1       0
-    ## HIF1A       0       1
-    ## MDM2        1       0
+    ##       Attr1.1 Attr1.2
+    ## EP300       0       1
+    ## HIF1A       0       0
+    ## MDM2        0       0
     ## TP53        1       1
-    ## VHL         0       1
+    ## VHL         0       0

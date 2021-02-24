@@ -732,7 +732,7 @@ print(glioma.mean.net)
 try({
 sink("../data/ATOTS_inferred_EGEOD18494_glioma_meanAfter.bn")
 cat("targets, factors\n")
-cat("EP300, (!!TP53 | !EP300)\n")
+cat("EP300, (!TP53 | !EP300)\n")
 cat("HIF1A, MDM2\n")
 cat("MDM2, 0\n")
 cat("TP53, !MDM2\n")
@@ -742,7 +742,7 @@ sink()}, silent = T)
 #' 
 #' 
 ## -----------------------------------------------------------------------------
-net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_hepatoma_meanAfter.bn")
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_glioma_meanAfter.bn")
 print(net)
 
 #' 
