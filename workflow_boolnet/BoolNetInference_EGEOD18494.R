@@ -568,7 +568,7 @@ print(net)
 ## -----------------------------------------------------------------------------
 
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "MDA-MB231 breast, mean Before binarize replicates")
 
 #' 
 #' # Mean AFTER binarize the replicates of breast cancer net :
@@ -604,7 +604,7 @@ print(net)
 #' 
 ## -----------------------------------------------------------------------------
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "MDA-MB231 breast, mean After binarize replicates")
 
 #' 
 #' # Mean BEFORE binarize the replicates of hepatoma cancer net :
@@ -612,11 +612,11 @@ plotAttractors(attr.syn)
 ## -----------------------------------------------------------------------------
 par(mfrow = c(1,1))
 plot(hepatoma.meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="HepG2 hepatoma\n 4 time-points, Mean BEFORE binarize replicates")
+     main="HepG2 hepatoma\n 4 time-points, Mean Before binarize replicates")
 
 #' 
 ## -----------------------------------------------------------------------------
-print(hepatoma.meanBin.p)
+print(hepatoma.meanBin.net)
 
 #' 
 ## -----------------------------------------------------------------------------
@@ -640,7 +640,7 @@ print(net)
 ## -----------------------------------------------------------------------------
 
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "HepG2 hepatoma, mean Before binarize replicates")
 
 #' 
 #' # Mean AFTER binarize the replicates of HepG2 hepatoma cancer net :
@@ -676,7 +676,7 @@ print(net)
 ## -----------------------------------------------------------------------------
 
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "HepG2 hepatoma, mean After binarize replicates")
 
 #' 
 #' # Mean BEFORE binarize the replicates of U87 glioma cancer net :
@@ -712,7 +712,7 @@ print(net)
 ## -----------------------------------------------------------------------------
 
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "U87 glioma, mean Before binarize replicates")
 
 #' 
 #' # Mean AFTER binarize the replicates of U87 glioma cancer net :
@@ -749,5 +749,5 @@ print(net)
 ## -----------------------------------------------------------------------------
 
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "U87 glioma, Mean After Binarize replicates")
 

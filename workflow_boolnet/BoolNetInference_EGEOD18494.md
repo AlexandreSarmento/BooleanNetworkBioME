@@ -742,7 +742,7 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "MDA-MB231 breast, mean Before binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-24-1.png)<!-- -->
@@ -832,7 +832,7 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "MDA-MB231 breast, mean After binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-29-1.png)<!-- -->
@@ -850,20 +850,42 @@ plotAttractors(attr.syn)
 ``` r
 par(mfrow = c(1,1))
 plot(hepatoma.meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="HepG2 hepatoma\n 4 time-points, Mean BEFORE binarize replicates")
+     main="HepG2 hepatoma\n 4 time-points, Mean Before binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
-print(hepatoma.meanBin.p)
+print(hepatoma.meanBin.net)
 ```
 
-    ## IGRAPH 7b4b0dc DN-- 5 7 -- 
-    ## + attr: name (v/c)
-    ## + edges from 7b4b0dc (vertex names):
-    ## [1] MDM2 ->EP300 EP300->EP300 MDM2 ->HIF1A EP300->HIF1A MDM2 ->MDM2 
-    ## [6] EP300->MDM2  VHL  ->TP53
+    ## Probabilistic Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (!MDM2) ( probability: 0.5, error: 0)
+    ## EP300 = (!EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (MDM2) ( probability: 0.5, error: 0)
+    ## HIF1A = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (!MDM2) ( probability: 0.5, error: 0)
+    ## MDM2 = (!EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (VHL) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = 0 ( probability: 1, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## VHL = 0
 
 ``` r
 try({
@@ -899,7 +921,7 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "HepG2 hepatoma, mean Before binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-34-1.png)<!-- -->
@@ -993,7 +1015,7 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "HepG2 hepatoma, mean After binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-39-1.png)<!-- -->![](figs/EGEOD18494-unnamed-chunk-39-2.png)<!-- -->
@@ -1087,7 +1109,7 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "U87 glioma, mean Before binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-44-1.png)<!-- -->
@@ -1174,7 +1196,7 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "U87 glioma, Mean After Binarize replicates")
 ```
 
 ![](figs/EGEOD18494-unnamed-chunk-49-1.png)<!-- -->![](figs/EGEOD18494-unnamed-chunk-49-2.png)<!-- -->
