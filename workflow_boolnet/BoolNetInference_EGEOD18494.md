@@ -130,24 +130,24 @@ expr.EGEOD18494.hif <- as.data.frame(expr.EGEOD18494) %>%
 ```
 
 ``` r
-# Function to binarize according an consensus mean of probes, add the O2 state and rename columns 
+# Function to binarize according an consensus mean of probes, add the O2 state and rename columns
 
 binNet <- function(b){
-  
+
   cols <- data.EGEOD18494$codes %in% names(b)
-  
-  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>% 
-  as.data.frame(.)  %>% 
+
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>%
+  as.data.frame(.)  %>%
   aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
   mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
-  #rbind(., c("O2", 1,0,0,0)) %>% 
+  #rbind(., c("O2", 1,0,0,0)) %>%
     rename_at(vars(data.EGEOD18494$codes[cols] ),
             ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
                     data.EGEOD18494$time[cols],".",
                     substr(data.EGEOD18494$cell_line[cols],1,2), ".",
-                    data.EGEOD18494$rep[cols])) %>% 
+                    data.EGEOD18494$rep[cols])) %>%
   column_to_rownames("symbol")
-  
+
 }
 ```
 
@@ -265,83 +265,6 @@ binarizeTimeSeries(breast1x[,-1], method="kmeans")$binarizedMeasurements  %>%
 # MDA-MB231 breast cancer
 
 ``` r
-cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
-cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
-cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
-
-breast1x <- 
-expr.EGEOD18494.hif %>% 
-  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1])) %>% binNet(.) 
-
-breast1x %>% knitr::kable(.)
-```
-
-|       | no.control.MD.1 | hy.4h.MD.1 | hy.8h.MD.1 | hy.12h.MD.1 |
-| :---- | --------------: | ---------: | ---------: | ----------: |
-| EP300 |               0 |          1 |          1 |           0 |
-| HIF1A |               1 |          1 |          0 |           0 |
-| MDM2  |               1 |          0 |          1 |           1 |
-| TP53  |               1 |          0 |          1 |           1 |
-| VHL   |               1 |          1 |          1 |           0 |
-
-``` r
-breast2x <- 
-expr.EGEOD18494.hif %>% 
-  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2])) %>% binNet(.) 
-
-breast2x  %>% knitr::kable(.)
-```
-
-|       | no.control.MD.2 | hy.4h.MD.2 | hy.8h.MD.2 | hy.12h.MD.2 |
-| :---- | --------------: | ---------: | ---------: | ----------: |
-| EP300 |               1 |          0 |          1 |           1 |
-| HIF1A |               1 |          1 |          0 |           0 |
-| MDM2  |               1 |          0 |          1 |           0 |
-| TP53  |               0 |          1 |          1 |           1 |
-| VHL   |               1 |          1 |          1 |           0 |
-
-``` r
-breast3x <- 
-expr.EGEOD18494.hif %>% 
-  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% binNet(.) 
-
-breast3x %>% knitr::kable(.)
-```
-
-|       | no.control.MD.3 | hy.4h.MD.3 | hy.8h.MD.3 | hy.12h.MD.3 |
-| :---- | --------------: | ---------: | ---------: | ----------: |
-| EP300 |               0 |          1 |          1 |           1 |
-| HIF1A |               1 |          1 |          0 |           0 |
-| MDM2  |               1 |          1 |          0 |           1 |
-| TP53  |               0 |          1 |          1 |           1 |
-| VHL   |               1 |          1 |          0 |           1 |
-
-``` r
-breast.mean <- 
-cbind(breast1x, breast2x,breast3x) %>%
-  tibble::rownames_to_column('gene') %>%
-  mutate_at(vars(-gene), as.numeric) %>% 
-  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>% 
-  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>% 
-  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>% 
-  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
-  dplyr::select(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h", "gene")) %>%
-  mutate_at(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)  
-  tibble::column_to_rownames('gene')
-
-breast.mean %>% 
-  knitr::kable(.)
-```
-
-|       | no.ctrl | hy.4h | hy.8h | hy.12h |
-| :---- | ------: | ----: | ----: | -----: |
-| EP300 |       0 |     1 |     1 |      1 |
-| HIF1A |       1 |     1 |     0 |      0 |
-| MDM2  |       1 |     0 |     1 |      1 |
-| TP53  |       0 |     1 |     1 |      1 |
-| VHL   |       1 |     1 |     1 |      0 |
-
-``` r
 cellline.breast <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer")
                   
 breast.meanBin <- 
@@ -360,166 +283,490 @@ breast.meanBin %>%
 | TP53  |       0 |     0 |     1 |      1 |
 | VHL   |       1 |     1 |     1 |      0 |
 
-<!-- # HepG2 hepatoma -->
+``` r
+cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
 
-<!-- ```{r} -->
+breast1x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1])) %>% binNet(.)
 
-<!-- cellline.rep1 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 1) -->
+# breast1x %>% knitr::kable(.)
 
-<!-- cellline.rep2 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 2) -->
+breast2x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2])) %>% binNet(.)
 
-<!-- cellline.rep3 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 3) -->
+# breast2x  %>% knitr::kable(.)
 
-<!-- hepatoma1x <-  -->
+breast3x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% binNet(.)
 
-<!-- expr.EGEOD18494.hif %>%  -->
+# breast3x %>% knitr::kable(.)
 
-<!--   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>%  -->
+breast.mean <-
+cbind(breast1x,breast2x,breast3x) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>%
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>%
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>%
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>%
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
+  dplyr::select(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  mutate_at(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)
+  tibble::column_to_rownames('gene')
 
-<!--   binNet(.)  -->
+# breast.mean %>%  
+#    knitr::kable(.) 
+```
 
-<!-- hepatoma1x %>%  -->
+# HepG2 hepatoma
 
-<!--   knitr::kable(.) -->
+``` r
+cellline.hepatoma <- (data.EGEOD18494$cell_line == "HepG2 hepatoma")
 
-<!-- hepatoma2x <-  -->
+hepatoma.meanBin <- 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.hepatoma])) %>% meanBinNet(.) 
 
-<!-- expr.EGEOD18494.hif %>%  -->
+hepatoma.meanBin %>% 
+  knitr::kable(.)
+```
 
-<!--   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>%  -->
+|       | no.ctrl | hy.4h | hy.8h | hy.12h |
+| :---- | ------: | ----: | ----: | -----: |
+| EP300 |       0 |     1 |     0 |      1 |
+| HIF1A |       0 |     0 |     1 |      0 |
+| MDM2  |       0 |     1 |     0 |      1 |
+| TP53  |       1 |     1 |     0 |      0 |
+| VHL   |       1 |     0 |     0 |      0 |
 
-<!--   binNet(.)  -->
+``` r
+cellline.rep1 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 3)
 
-<!-- hepatoma2x %>%  -->
+hepatoma1x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>%
+  binNet(.)
 
-<!--   knitr::kable(.) -->
+# hepatoma1x %>%
+#   knitr::kable(.)
 
-<!-- hepatoma3x <-  -->
+hepatoma2x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>%
+  binNet(.)
 
-<!-- expr.EGEOD18494.hif %>%  -->
+# hepatoma2x %>%
+#   knitr::kable(.)
 
-<!--   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>%  -->
+hepatoma3x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>%
+  binNet(.)
 
-<!--   binNet(.)  -->
+# hepatoma3x %>%
+#   knitr::kable(.)
 
-<!-- hepatoma3x %>%  -->
+hepatoma.mean <-
+cbind(hepatoma1x,hepatoma2x,hepatoma3x) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>%
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>%
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>%
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>%
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
+  dplyr::select(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  mutate_at(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)
+  tibble::column_to_rownames('gene')
 
-<!--   knitr::kable(.) -->
+hepatoma.mean %>%  
+ knitr::kable(.)
+```
+
+|       | no.ctrl | hy.4h | hy.8h | hy.12h |
+| :---- | ------: | ----: | ----: | -----: |
+| EP300 |       0 |     1 |     0 |      1 |
+| HIF1A |       0 |     0 |     1 |      0 |
+| MDM2  |       0 |     1 |     0 |      1 |
+| TP53  |       1 |     1 |     1 |      1 |
+| VHL   |       1 |     0 |     1 |      0 |
+
+# U87 glioma
+
+``` r
+cellline.glioma <- (data.EGEOD18494$cell_line == "U87 glioma")
+
+glioma.meanBin <- 
+expr.EGEOD18494.hif %>% 
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.glioma])) %>% meanBinNet(.) 
+
+glioma.meanBin %>% 
+  knitr::kable(.)
+```
+
+|       | no.ctrl | hy.4h | hy.8h | hy.12h |
+| :---- | ------: | ----: | ----: | -----: |
+| EP300 |       1 |     1 |     1 |      0 |
+| HIF1A |       1 |     1 |     0 |      0 |
+| MDM2  |       1 |     0 |     0 |      0 |
+| TP53  |       1 |     0 |     1 |      0 |
+| VHL   |       1 |     1 |     1 |      0 |
+
+``` r
+cellline.rep1 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 3)
+
+glioma1x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>%
+  binNet(.)
+
+# glioma1x %>%
+#   knitr::kable(.)
+
+glioma2x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>%
+  binNet(.)
+
+# glioma2x %>%
+#   knitr::kable(.)
+
+glioma3x <-
+expr.EGEOD18494.hif %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>%
+  binNet(.)
+
+# glioma3x %>%
+#   knitr::kable(.)
+
+glioma.mean <-
+cbind(glioma1x,glioma2x,glioma3x) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>%
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>%
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>%
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>%
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
+  dplyr::select(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  mutate_at(c("no.ctrl", "hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)
+  tibble::column_to_rownames('gene')
+
+glioma.mean %>%  
+ knitr::kable(.)
+```
+
+|       | no.ctrl | hy.4h | hy.8h | hy.12h |
+| :---- | ------: | ----: | ----: | -----: |
+| EP300 |       1 |     0 |     1 |      0 |
+| HIF1A |       1 |     1 |     0 |      0 |
+| MDM2  |       1 |     0 |     0 |      0 |
+| TP53  |       1 |     0 |     1 |      1 |
+| VHL   |       1 |     1 |     1 |      0 |
+
+<!-- ```{r  include=FALSE} -->
+
+<!-- breast1x.net <- reconstructNetwork(breast1x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- breast2x.net <- reconstructNetwork(breast2x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- breast3x.net <- reconstructNetwork(breast3x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- hepatoma1x.net <- reconstructNetwork(hepatoma1x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- hepatoma2x.net <- reconstructNetwork(hepatoma2x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- hepatoma3x.net <- reconstructNetwork(hepatoma3x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- glioma1x.net <- reconstructNetwork(glioma1x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- glioma2x.net <- reconstructNetwork(glioma2x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- glioma3x.net <- reconstructNetwork(glioma3x, method="bestfit", returnPBN=TRUE, readableFunctions=TRUE) -->
+
+<!-- breast1x.p <- plotNetworkWiring(breast1x.net, plotIt=F) -->
+
+<!-- breast2x.p <- plotNetworkWiring(breast2x.net, plotIt=F) -->
+
+<!-- breast3x.p <- plotNetworkWiring(breast3x.net, plotIt=F) -->
+
+<!-- hepatoma1x.p <- plotNetworkWiring(hepatoma1x.net, plotIt=F) -->
+
+<!-- hepatoma2x.p <- plotNetworkWiring(hepatoma2x.net, plotIt=F) -->
+
+<!-- hepatoma3x.p <- plotNetworkWiring(hepatoma3x.net, plotIt=F) -->
+
+<!-- glioma1x.p <- plotNetworkWiring(glioma1x.net, plotIt=F) -->
+
+<!-- glioma2x.p <- plotNetworkWiring(glioma2x.net, plotIt=F) -->
+
+<!-- glioma3x.p <- plotNetworkWiring(glioma3x.net, plotIt=F) -->
+
+<!-- # All breast cancer nets merged: -->
+
+<!-- breast.all <- reconstructNetwork(list(breast1x, breast2x, breast3x), -->
+
+<!--                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE) -->
+
+<!-- breast.all.p <- plotNetworkWiring(breast.all, plotIt=F) -->
+
+<!-- # All hepatoma cancer nets merged: -->
+
+<!-- hepatoma.all <- reconstructNetwork(list(hepatoma1x, hepatoma2x, hepatoma3x), -->
+
+<!--                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE) -->
+
+<!-- hepatoma.all.p <- plotNetworkWiring(hepatoma.all, plotIt=F) -->
+
+<!-- # All hepatoma cancer nets merged: -->
+
+<!-- glioma.all <- reconstructNetwork(list(glioma1x, glioma2x, glioma3x), -->
+
+<!--                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE) -->
+
+<!-- glioma.all.p <- plotNetworkWiring(glioma.all, plotIt=F) -->
+
+<!-- # Mean AFTER binarize the replicates of breast cancer net : -->
+
+<!-- mean.net <- reconstructNetwork(breast.mean, -->
+
+<!--                                method="bestfit",returnPBN=TRUE,readableFunctions=TRUE) -->
+
+<!-- mean.p <- plotNetworkWiring(mean.net, plotIt=F) -->
 
 <!-- ``` -->
 
-<!-- # U87 glioma -->
+# Mean AFTER binarize the replicates of breast cancer net :
 
-<!-- ```{r} -->
+## MDA-MB231 breast cancer
 
-<!-- cellline.rep1 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 1) -->
+``` r
+breast.mean.net <- reconstructNetwork(breast.mean,
+                               method="bestfit", returnPBN=TRUE,readableFunctions=TRUE)
 
-<!-- cellline.rep2 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 2) -->
+breast.mean.p <- plotNetworkWiring(breast.mean.net, plotIt=F)
+```
 
-<!-- cellline.rep3 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 3) -->
+## HepG2 hepatoma
 
-<!-- glioma1x <-  -->
+``` r
+hepatoma.mean.net <- reconstructNetwork(hepatoma.mean,
+                               method="bestfit", returnPBN=TRUE,readableFunctions=TRUE)
 
-<!-- expr.EGEOD18494.hif %>%  -->
+hepatoma.mean.p <- plotNetworkWiring(hepatoma.mean.net, plotIt=F)
+```
 
-<!--   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>%  -->
+## U87 glioma
 
-<!--   binNet(.)  -->
+``` r
+glioma.mean.net <- reconstructNetwork(glioma.mean,
+                               method="bestfit", returnPBN=TRUE,readableFunctions=TRUE)
 
-<!-- glioma1x %>%  -->
+glioma.mean.p <- plotNetworkWiring(glioma.mean.net, plotIt=F)
+```
 
-<!--   knitr::kable(.) -->
+# Mean BEFORE binarize the replicates :
 
-<!-- glioma2x <-  -->
+## MDA-MB231 breast cancer
 
-<!-- expr.EGEOD18494.hif %>%  -->
+``` r
+breast.meanBin.net <- reconstructNetwork(breast.meanBin,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
-<!--   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>%  -->
+breast.meanBin.p <- plotNetworkWiring(breast.meanBin.net, plotIt=F)
+```
 
-<!--   binNet(.)  -->
+## HepG2 hepatoma
 
-<!-- glioma2x %>%  -->
+``` r
+hepatoma.meanBin.net <- reconstructNetwork(hepatoma.meanBin,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
-<!--   knitr::kable(.) -->
+hepatoma.meanBin.p <- plotNetworkWiring(hepatoma.meanBin.net, plotIt=F)
+```
 
-<!-- glioma3x <-  -->
+## U87 glioma
 
-<!-- expr.EGEOD18494.hif %>%  -->
+``` r
+glioma.meanBin.net <- reconstructNetwork(glioma.meanBin,
+                               method="bestfit",returnPBN=TRUE,readableFunctions=TRUE)
 
-<!--   dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>%  -->
-
-<!--   binNet(.)  -->
-
-<!-- glioma3x %>%  -->
-
-<!--   knitr::kable(.) -->
-
-<!-- ``` -->
+glioma.meanBin.p <- plotNetworkWiring(glioma.meanBin.net, plotIt=F)
+```
 
 # Network inference:
 
-``` r
-# MDA-MB231 breast cancer - 4 time-points
-par(mfrow = c(1,3))
-plot(breast1x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, replicate 1")
-plot(breast2x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, replicate 2")
-plot(breast3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, replicate 3")
-```
+<!-- ```{r } -->
 
-![](figs/EGEOD18494-unnamed-chunk-10-1.png)<!-- -->
+<!-- # MDA-MB231 breast cancer - 4 time-points -->
+
+<!-- par(mfrow = c(1,3)) -->
+
+<!-- plot(breast1x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="MDA-MB231 breast\n 4 time-points, replicate 1") -->
+
+<!-- plot(breast2x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="MDA-MB231 breast\n 4 time-points, replicate 2") -->
+
+<!-- plot(breast3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="MDA-MB231 breast\n 4 time-points, replicate 3") -->
+
+<!-- par(mfrow = c(1,1)) -->
+
+<!-- plot(breast.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="MDA-MB231 breast\n 4 time-points, all replicate") -->
+
+<!-- # HepG2 hepatoma -->
+
+<!-- par(mfrow = c(1,3)) -->
+
+<!-- plot(hepatoma1x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="HepG2 hepatoma\n 4 steps, replicate 1") -->
+
+<!-- plot(hepatoma2x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="HepG2 hepatoma\n 4 steps, replicate 2") -->
+
+<!-- plot(hepatoma3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="HepG2 hepatoma\n 4 steps, replicate 3") -->
+
+<!-- par(mfrow = c(1,1)) -->
+
+<!-- plot(hepatoma.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="HepG2 hepatoma\n 4 steps, replicate 3") -->
+
+<!-- # U87 glioma -->
+
+<!-- par(mfrow = c(1,3)) -->
+
+<!-- plot(glioma1x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="U87 glioma\n 4 steps, replicate 1") -->
+
+<!-- plot(glioma2x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="U87 glioma\n 4 steps, replicate 2") -->
+
+<!-- plot(glioma3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="U87 glioma\n 4 steps, replicate 3") -->
+
+<!-- par(mfrow = c(1,1)) -->
+
+<!-- plot(glioma.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3, -->
+
+<!--      main="U87 glioma\n 4 steps, replicate 3") -->
+
+<!-- ``` -->
+
+# Mean BEFORE binarize the replicates of breast cancer net :
 
 ``` r
 par(mfrow = c(1,1))
-plot(breast.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, all replicate")
+plot(breast.meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 time-points, Mean binarized replicates")
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-10-2.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
-# 
-# # HepG2 hepatoma
-# par(mfrow = c(1,3))
-# plot(hepatoma1x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="HepG2 hepatoma\n 4 steps, replicate 1")
-# plot(hepatoma2x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="HepG2 hepatoma\n 4 steps, replicate 2")
-# plot(hepatoma3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="HepG2 hepatoma\n 4 steps, replicate 3")
-# 
-# par(mfrow = c(1,1))
-# plot(hepatoma.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="HepG2 hepatoma\n 4 steps, replicate 3")
-# 
-# # U87 glioma
-# par(mfrow = c(1,3))
-# plot(glioma1x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="U87 glioma\n 4 steps, replicate 1")
-# plot(glioma2x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="U87 glioma\n 4 steps, replicate 2")
-# plot(glioma3x.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="U87 glioma\n 4 steps, replicate 3")
-# 
-# par(mfrow = c(1,1))
-# plot(glioma.all.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-#      main="U87 glioma\n 4 steps, replicate 3")
+print(breast.meanBin.net)
 ```
+
+    ## Probabilistic Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (!TP53) ( probability: 0.5, error: 0)
+    ## EP300 = (HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (!EP300) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (TP53) ( probability: 0.5, error: 0)
+    ## MDM2 = (!HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (EP300) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (!TP53) ( probability: 0.5, error: 0)
+    ## VHL = (HIF1A) ( probability: 0.5, error: 0)
+
+``` r
+try({
+sink("../data/ATOTS_inferred_EGEOD18494_breast.bn")
+cat("targets, factors\n")
+cat("EP300, (!TP53 | HIF1A) \n")
+cat("HIF1A,  !EP300 \n")
+cat("MDM2, (TP53 | !HIF1A)\n")
+cat("TP53, EP300\n")
+cat("VHL, (!TP53 | HIF1A)\n")
+sink()}, silent = T)
+```
+
+``` r
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_breast.bn")
+print(net)
+```
+
+    ## Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## EP300 = (!TP53 | HIF1A)
+    ## HIF1A = !EP300
+    ## MDM2 = (TP53 | !HIF1A)
+    ## TP53 = EP300
+    ## VHL = (!TP53 | HIF1A)
+
+``` r
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn)
+```
+
+![](figs/EGEOD18494-unnamed-chunk-24-1.png)<!-- -->
+
+    ## $`4`
+    ##       Attr1.1 Attr1.2 Attr1.3 Attr1.4
+    ## EP300       0       1       1       0
+    ## HIF1A       1       1       0       0
+    ## MDM2        1       0       0       1
+    ## TP53        0       0       1       1
+    ## VHL         0       1       1       0
 
 # Mean AFTER binarize the replicates of breast cancer net :
 
 ``` r
 par(mfrow = c(1,1))
-plot(mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, Mean replicates")
+plot(breast.mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MDA-MB231 breast\n 4 time-points, Mean After Binarize replicates")
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-11-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
-print(mean.net)
+print(breast.mean.net)
 ```
 
     ## Probabilistic Boolean network with 5 genes
@@ -552,7 +799,7 @@ print(mean.net)
 
 ``` r
 try({
-sink("../data/ATOTS_inferred_EGEOD18494.bn")
+sink("../data/ATOTS_inferred_EGEOD18494_breast_meanAfter.bn")
 cat("targets, factors\n")
 cat("EP300, 1\n")
 cat("HIF1A, (!TP53 | !EP300 )\n")
@@ -563,7 +810,7 @@ sink()}, silent = T)
 ```
 
 ``` r
-net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494.bn")
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_breast_meanAfter.bn")
 print(net)
 ```
 
@@ -588,7 +835,7 @@ attr.syn <- getAttractors(net, type = "synchronous")
 plotAttractors(attr.syn)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-15-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-29-1.png)<!-- -->
 
     ## $`1`
     ##       Attr1.1
@@ -598,18 +845,273 @@ plotAttractors(attr.syn)
     ## TP53        1
     ## VHL         0
 
-# Mean BEFORE binarize the replicates of breast cancer net :
+# Mean BEFORE binarize the replicates of hepatoma cancer net :
 
 ``` r
 par(mfrow = c(1,1))
-plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, Mean BEFORE binarize replicates")
+plot(hepatoma.meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="HepG2 hepatoma\n 4 time-points, Mean BEFORE binarize replicates")
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-16-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
-print(meanBin.net)
+print(hepatoma.meanBin.p)
+```
+
+    ## IGRAPH 7b4b0dc DN-- 5 7 -- 
+    ## + attr: name (v/c)
+    ## + edges from 7b4b0dc (vertex names):
+    ## [1] MDM2 ->EP300 EP300->EP300 MDM2 ->HIF1A EP300->HIF1A MDM2 ->MDM2 
+    ## [6] EP300->MDM2  VHL  ->TP53
+
+``` r
+try({
+sink("../data/ATOTS_inferred_EGEOD18494_hepatoma.bn")
+cat("targets, factors\n")
+cat("EP300, (!MDM2 | !EP300) \n")
+cat("HIF1A,  (MDM2 | EP300) \n")
+cat("MDM2, (!MDM2 | EP300)\n")
+cat("TP53, VHL\n")
+cat("VHL, 0\n")
+sink()}, silent = T)
+```
+
+``` r
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_hepatoma.bn")
+print(net)
+```
+
+    ## Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## EP300 = (!MDM2 | !EP300)
+    ## HIF1A = (MDM2 | EP300)
+    ## MDM2 = (!MDM2 | EP300)
+    ## TP53 = VHL
+    ## VHL = 0
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## VHL = 0
+
+``` r
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn)
+```
+
+![](figs/EGEOD18494-unnamed-chunk-34-1.png)<!-- -->
+
+    ## $`3`
+    ##       Attr1.1 Attr1.2 Attr1.3
+    ## EP300       1       1       0
+    ## HIF1A       1       1       1
+    ## MDM2        0       1       1
+    ## TP53        0       0       0
+    ## VHL         0       0       0
+
+# Mean AFTER binarize the replicates of HepG2 hepatoma cancer net :
+
+``` r
+par(mfrow = c(1,1))
+plot(hepatoma.mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="HepG2 hepatoma\n 4 time-points, Mean After Binarize replicates")
+```
+
+![](figs/EGEOD18494-unnamed-chunk-35-1.png)<!-- -->
+
+``` r
+print(hepatoma.mean.net)
+```
+
+    ## Probabilistic Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (VHL) ( probability: 0.3333333, error: 0)
+    ## EP300 = (!MDM2) ( probability: 0.3333333, error: 0)
+    ## EP300 = (!EP300) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (!VHL) ( probability: 0.3333333, error: 0)
+    ## HIF1A = (MDM2) ( probability: 0.3333333, error: 0)
+    ## HIF1A = (EP300) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (VHL) ( probability: 0.3333333, error: 0)
+    ## MDM2 = (!MDM2) ( probability: 0.3333333, error: 0)
+    ## MDM2 = (!EP300) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = 1 ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (!VHL) ( probability: 0.3333333, error: 0)
+    ## VHL = (MDM2) ( probability: 0.3333333, error: 0)
+    ## VHL = (EP300) ( probability: 0.3333333, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## TP53 = 1
+
+``` r
+try({
+sink("../data/ATOTS_inferred_EGEOD18494_hepatoma_meanAfter.bn")
+cat("targets, factors\n")
+cat("EP300, (VHL | !MDM2) | !EP300 \n")
+cat("HIF1A, (!VHL | MDM2 ) | EP300\n")
+cat("MDM2, (VHL | !MDM2) | !EP300\n")
+cat("TP53, 1\n")
+cat("VHL, (!VHL | MDM2) | EP300\n")
+sink()}, silent = T)
+```
+
+``` r
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_hepatoma_meanAfter.bn")
+print(net)
+```
+
+    ## Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## EP300 = (VHL | !MDM2) | !EP300
+    ## HIF1A = (!VHL | MDM2 ) | EP300
+    ## MDM2 = (VHL | !MDM2) | !EP300
+    ## TP53 = 1
+    ## VHL = (!VHL | MDM2) | EP300
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## TP53 = 1
+
+``` r
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn)
+```
+
+![](figs/EGEOD18494-unnamed-chunk-39-1.png)<!-- -->![](figs/EGEOD18494-unnamed-chunk-39-2.png)<!-- -->
+
+    ## $`1`
+    ##       Attr1.1
+    ## EP300       1
+    ## HIF1A       1
+    ## MDM2        1
+    ## TP53        1
+    ## VHL         1
+    ## 
+    ## $`2`
+    ##       Attr2.1 Attr2.2
+    ## EP300       1       0
+    ## HIF1A       0       1
+    ## MDM2        1       0
+    ## TP53        1       1
+    ## VHL         0       1
+
+# Mean BEFORE binarize the replicates of U87 glioma cancer net :
+
+``` r
+par(mfrow = c(1,1))
+plot(glioma.meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="U87 glioma\n 4 time-points, Mean binarized replicates")
+```
+
+![](figs/EGEOD18494-unnamed-chunk-40-1.png)<!-- -->
+
+``` r
+print(glioma.meanBin.net)
+```
+
+    ## Probabilistic Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (HIF1A) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (MDM2) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = 0 ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (!TP53) ( probability: 1, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (HIF1A) ( probability: 1, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## MDM2 = 0
+
+``` r
+try({
+sink("../data/ATOTS_inferred_EGEOD18494_glioma.bn")
+cat("targets, factors\n")
+cat("EP300, HIF1A \n")
+cat("HIF1A,  MDM2 \n")
+cat("MDM2, 0\n")
+cat("TP53, !TP53\n")
+cat("VHL, HIF1A\n")
+sink()}, silent = T)
+```
+
+``` r
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_glioma.bn")
+print(net)
+```
+
+    ## Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## EP300 = HIF1A
+    ## HIF1A = MDM2
+    ## MDM2 = 0
+    ## TP53 = !TP53
+    ## VHL = HIF1A
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## MDM2 = 0
+
+``` r
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn)
+```
+
+![](figs/EGEOD18494-unnamed-chunk-44-1.png)<!-- -->
+
+    ## $`2`
+    ##       Attr1.1 Attr1.2
+    ## EP300       0       0
+    ## HIF1A       0       0
+    ## MDM2        0       0
+    ## TP53        0       1
+    ## VHL         0       0
+
+# Mean AFTER binarize the replicates of U87 glioma cancer net :
+
+``` r
+par(mfrow = c(1,1))
+plot(glioma.mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="U87 glioma\n 4 time-points, Mean After Binarize replicates")
+```
+
+![](figs/EGEOD18494-unnamed-chunk-45-1.png)<!-- -->
+
+``` r
+print(glioma.mean.net)
 ```
 
     ## Probabilistic Boolean network with 5 genes
@@ -621,36 +1123,37 @@ print(meanBin.net)
     ## 
     ## Alternative transition functions for gene EP300:
     ## EP300 = (!TP53) ( probability: 0.5, error: 0)
-    ## EP300 = (HIF1A) ( probability: 0.5, error: 0)
+    ## EP300 = (!EP300) ( probability: 0.5, error: 0)
     ## 
     ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (!EP300) ( probability: 1, error: 0)
+    ## HIF1A = (MDM2) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (TP53) ( probability: 0.5, error: 0)
-    ## MDM2 = (!HIF1A) ( probability: 0.5, error: 0)
+    ## MDM2 = 0 ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene TP53:
-    ## TP53 = (EP300) ( probability: 1, error: 0)
+    ## TP53 = (!MDM2) ( probability: 1, error: 0)
     ## 
     ## Alternative transition functions for gene VHL:
-    ## VHL = (!TP53) ( probability: 0.5, error: 0)
-    ## VHL = (HIF1A) ( probability: 0.5, error: 0)
+    ## VHL = (HIF1A) ( probability: 1, error: 0)
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## MDM2 = 0
 
 ``` r
 try({
-sink("../data/ATOTS_inferred_EGEOD18494_meanBin.bn")
+sink("../data/ATOTS_inferred_EGEOD18494_glioma_meanAfter.bn")
 cat("targets, factors\n")
-cat("EP300, (!TP53 | HIF1A) \n")
-cat("HIF1A,  !EP300 \n")
-cat("MDM2, (TP53 | !HIF1A)\n")
-cat("TP53, EP300\n")
-cat("VHL, (!TP53 | HIF1A)\n")
+cat("EP300, (!!TP53 | !EP300)\n")
+cat("HIF1A, MDM2\n")
+cat("MDM2, 0\n")
+cat("TP53, !MDM2\n")
+cat("VHL, HIF1A\n")
 sink()}, silent = T)
 ```
 
 ``` r
-net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_meanBin.bn")
+net <- loadNetwork("../data/ATOTS_inferred_EGEOD18494_hepatoma_meanAfter.bn")
 print(net)
 ```
 
@@ -660,23 +1163,34 @@ print(net)
     ## EP300 HIF1A MDM2 TP53 VHL
     ## 
     ## Transition functions:
-    ## EP300 = (!TP53 | HIF1A)
-    ## HIF1A = !EP300
-    ## MDM2 = (TP53 | !HIF1A)
-    ## TP53 = EP300
-    ## VHL = (!TP53 | HIF1A)
+    ## EP300 = (VHL | !MDM2) | !EP300
+    ## HIF1A = (!VHL | MDM2 ) | EP300
+    ## MDM2 = (VHL | !MDM2) | !EP300
+    ## TP53 = 1
+    ## VHL = (!VHL | MDM2) | EP300
+    ## 
+    ## Knocked-out and over-expressed genes:
+    ## TP53 = 1
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
 plotAttractors(attr.syn)
 ```
 
-![](figs/EGEOD18494-unnamed-chunk-20-1.png)<!-- -->
+![](figs/EGEOD18494-unnamed-chunk-49-1.png)<!-- -->![](figs/EGEOD18494-unnamed-chunk-49-2.png)<!-- -->
 
-    ## $`4`
-    ##       Attr1.1 Attr1.2 Attr1.3 Attr1.4
-    ## EP300       0       1       1       0
-    ## HIF1A       1       1       0       0
-    ## MDM2        1       0       0       1
-    ## TP53        0       0       1       1
-    ## VHL         0       1       1       0
+    ## $`1`
+    ##       Attr1.1
+    ## EP300       1
+    ## HIF1A       1
+    ## MDM2        1
+    ## TP53        1
+    ## VHL         1
+    ## 
+    ## $`2`
+    ##       Attr2.1 Attr2.2
+    ## EP300       1       0
+    ## HIF1A       0       1
+    ## MDM2        1       0
+    ## TP53        1       1
+    ## VHL         0       1
