@@ -51,6 +51,7 @@ No VHL in GSE41491
       column_to_rownames(var = "symbol") %>%
       dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"]))
 
+    expr.EGEOD18494.hif <- expr.EGEOD18494.hif[c("HIF1A", "TP53", "MDM2", "VHL", "EP300"),]
 
     hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols]
 
@@ -65,6 +66,7 @@ No VHL in GSE41491
       summarise_at(vars(-probes), funs(mean(., na.rm=TRUE)))  %>%
       column_to_rownames(var = "symbol") 
       
+    expr.GSE47533.hif <- expr.GSE47533.hif[c("HIF1A", "TP53", "MDM2", "VHL", "EP300"),]
 
     hif.probes <- anno.GSE41491$probes[anno.GSE41491$symbol %in% hif.symbols]
 
@@ -97,134 +99,97 @@ No VHL in GSE41491
 
     rownames(expr.EGEOD18494.tdm) <- symbols
 
-    row_medians_assayData <- 
-      Biobase::rowMedians(as.matrix(expr.GSE47533))
-
-    RLE_data <- sweep(expr.GSE47533, 1, row_medians_assayData)
-
-    RLE_data <- as.data.frame(RLE_data)
-    RLE_data_gathered <- 
-      tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
-
-    ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
-                                           log2_expression_deviation)) + 
-      geom_boxplot(outlier.shape = NA) + 
-      ylim(c(-2, 2)) + 
-      ggtitle("expr.GSE47533") + 
-      theme(axis.text.x = element_text(colour = "aquamarine4", 
-                                      angle = 60, size = 6.5, hjust = 1 ,
-                                      face = "bold"))
-
-    ## Warning: Removed 142 rows containing non-finite values (stat_boxplot).
-
-![](figs/BoolNetInfer-unnamed-chunk-6-1.png)<!-- -->
-
-    row_medians_assayData <- 
-      Biobase::rowMedians(as.matrix(expr.EGEOD18494.tdm))
-
-    RLE_data <- sweep(expr.EGEOD18494.tdm, 1, row_medians_assayData)
-
-    RLE_data <- as.data.frame(RLE_data)
-    RLE_data_gathered <- 
-      tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
-
-    ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
-                                           log2_expression_deviation)) + 
-      geom_boxplot(outlier.shape = NA) + 
-      ylim(c(-2, 2)) + 
-      ggtitle("expr.EGEOD18494.tdm") + 
-      theme(axis.text.x = element_text(colour = "aquamarine4", 
-                                      angle = 60, size = 6.5, hjust = 1 ,
-                                      face = "bold"))
-
-![](figs/BoolNetInfer-unnamed-chunk-6-2.png)<!-- -->
-
-    row_medians_assayData <- 
-      Biobase::rowMedians(as.matrix(expr.EGEOD18494.hif))
-
-    RLE_data <- sweep(expr.EGEOD18494.hif, 1, row_medians_assayData)
-
-    RLE_data <- as.data.frame(RLE_data)
-    RLE_data_gathered <- 
-      tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
-
-    ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
-                                           log2_expression_deviation)) + 
-      geom_boxplot(outlier.shape = NA) + 
-      ylim(c(-2, 2)) + 
-      ggtitle("expr.EGEOD18494.hif") + 
-      theme(axis.text.x = element_text(colour = "aquamarine4", 
-                                      angle = 60, size = 6.5, hjust = 1 ,
-                                      face = "bold"))
-
-![](figs/BoolNetInfer-unnamed-chunk-6-3.png)<!-- -->
-
-    rm(RLE_data, RLE_data_gathered, row_medians_assayData)
-
-    hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols]
-
-
-    row_medians_assayData <- 
-      Biobase::rowMedians(as.matrix(t(expr.GSE47533.hif)))
-
-    RLE_data <- sweep(t(expr.GSE47533.hif), 1, row_medians_assayData)
-
-    RLE_data <- as.data.frame(RLE_data)
-    RLE_data_gathered <- 
-      tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
-
-    ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
-                                           log2_expression_deviation)) + 
-      geom_boxplot(outlier.shape = NA) + 
-      ylim(c(-4, 5)) + 
-      ggtitle("GSE47533 MCF7 - Raw data") +
-      theme(axis.text.x = element_text(colour = "aquamarine4", 
-                                      angle = 60, size = 6.5, hjust = 1 ,
-                                      face = "bold"))
-
-![](figs/BoolNetInfer-unnamed-chunk-7-1.png)<!-- -->
-
-    row_medians_assayData <- 
-      Biobase::rowMedians(as.matrix(t(expr.EGEOD18494.hif)))
-
-    RLE_data <- sweep(t(expr.EGEOD18494.hif), 1, row_medians_assayData)
-
-    RLE_data <- as.data.frame(RLE_data)
-    RLE_data_gathered <- 
-      tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
-
-    ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
-                                           log2_expression_deviation)) + 
-      geom_boxplot(outlier.shape = NA) + 
-      ggtitle("EGEOD18494 MDA-MB231 - Raw data") +
-      ylim(c(-4, 5)) + 
-      theme(axis.text.x = element_text(colour = "aquamarine4", 
-                                      angle = 60, size = 6.5, hjust = 1 ,
-                                      face = "bold"))
-
-![](figs/BoolNetInfer-unnamed-chunk-7-2.png)<!-- -->
-
-    row_medians_assayData <- 
-      Biobase::rowMedians(as.matrix(t(expr.EGEOD18494.tdm)))
-
-    RLE_data <- sweep(t(expr.EGEOD18494.tdm), 1, row_medians_assayData)
-
-    RLE_data <- as.data.frame(RLE_data)
-    RLE_data_gathered <- 
-      tidyr::gather(RLE_data, patient_array, log2_expression_deviation)
-
-    ggplot2::ggplot(RLE_data_gathered, aes(patient_array,
-                                           log2_expression_deviation)) + 
-      geom_boxplot(outlier.shape = NA) + 
-      ylim(c(-4, 5)) + 
-      ggtitle("EGEOD18494 MDA-MB231 - TDM data") +
-      theme(axis.text.x = element_text(colour = "aquamarine4", 
-                                      angle = 60, size = 6.5, hjust = 1 ,
-                                      face = "bold"))
-
-![](figs/BoolNetInfer-unnamed-chunk-7-3.png)<!-- -->
-
-    rm(RLE_data, RLE_data_gathered, row_medians_assayData)
+<!-- ```{r} -->
+<!-- row_medians_assayData <-  -->
+<!--   Biobase::rowMedians(as.matrix(expr.GSE47533)) -->
+<!-- RLE_data <- sweep(expr.GSE47533, 1, row_medians_assayData) -->
+<!-- RLE_data <- as.data.frame(RLE_data) -->
+<!-- RLE_data_gathered <-  -->
+<!--   tidyr::gather(RLE_data, patient_array, log2_expression_deviation) -->
+<!-- ggplot2::ggplot(RLE_data_gathered, aes(patient_array, -->
+<!--                                        log2_expression_deviation)) +  -->
+<!--   geom_boxplot(outlier.shape = NA) +  -->
+<!--   ylim(c(-2, 2)) +  -->
+<!--   ggtitle("expr.GSE47533") +  -->
+<!--   theme(axis.text.x = element_text(colour = "aquamarine4",  -->
+<!--                                   angle = 60, size = 6.5, hjust = 1 , -->
+<!--                                   face = "bold")) -->
+<!-- row_medians_assayData <-  -->
+<!--   Biobase::rowMedians(as.matrix(expr.EGEOD18494.tdm)) -->
+<!-- RLE_data <- sweep(expr.EGEOD18494.tdm, 1, row_medians_assayData) -->
+<!-- RLE_data <- as.data.frame(RLE_data) -->
+<!-- RLE_data_gathered <-  -->
+<!--   tidyr::gather(RLE_data, patient_array, log2_expression_deviation) -->
+<!-- ggplot2::ggplot(RLE_data_gathered, aes(patient_array, -->
+<!--                                        log2_expression_deviation)) +  -->
+<!--   geom_boxplot(outlier.shape = NA) +  -->
+<!--   ylim(c(-2, 2)) +  -->
+<!--   ggtitle("expr.EGEOD18494.tdm") +  -->
+<!--   theme(axis.text.x = element_text(colour = "aquamarine4",  -->
+<!--                                   angle = 60, size = 6.5, hjust = 1 , -->
+<!--                                   face = "bold")) -->
+<!-- row_medians_assayData <-  -->
+<!--   Biobase::rowMedians(as.matrix(expr.EGEOD18494.hif)) -->
+<!-- RLE_data <- sweep(expr.EGEOD18494.hif, 1, row_medians_assayData) -->
+<!-- RLE_data <- as.data.frame(RLE_data) -->
+<!-- RLE_data_gathered <-  -->
+<!--   tidyr::gather(RLE_data, patient_array, log2_expression_deviation) -->
+<!-- ggplot2::ggplot(RLE_data_gathered, aes(patient_array, -->
+<!--                                        log2_expression_deviation)) +  -->
+<!--   geom_boxplot(outlier.shape = NA) +  -->
+<!--   ylim(c(-2, 2)) +  -->
+<!--   ggtitle("expr.EGEOD18494.hif") +  -->
+<!--   theme(axis.text.x = element_text(colour = "aquamarine4",  -->
+<!--                                   angle = 60, size = 6.5, hjust = 1 , -->
+<!--                                   face = "bold")) -->
+<!-- rm(RLE_data, RLE_data_gathered, row_medians_assayData) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- hif.probes <- anno.GSE47533$probes[anno.GSE47533$symbol %in% hif.symbols] -->
+<!-- row_medians_assayData <-  -->
+<!--   Biobase::rowMedians(as.matrix(t(expr.GSE47533.hif))) -->
+<!-- RLE_data <- sweep(t(expr.GSE47533.hif), 1, row_medians_assayData) -->
+<!-- RLE_data <- as.data.frame(RLE_data) -->
+<!-- RLE_data_gathered <-  -->
+<!--   tidyr::gather(RLE_data, patient_array, log2_expression_deviation) -->
+<!-- ggplot2::ggplot(RLE_data_gathered, aes(patient_array, -->
+<!--                                        log2_expression_deviation)) +  -->
+<!--   geom_boxplot(outlier.shape = NA) +  -->
+<!--   ylim(c(-4, 5)) +  -->
+<!--   ggtitle("GSE47533 MCF7 - Raw data") + -->
+<!--   theme(axis.text.x = element_text(colour = "aquamarine4",  -->
+<!--                                   angle = 60, size = 6.5, hjust = 1 , -->
+<!--                                   face = "bold")) -->
+<!-- row_medians_assayData <-  -->
+<!--   Biobase::rowMedians(as.matrix(t(expr.EGEOD18494.hif))) -->
+<!-- RLE_data <- sweep(t(expr.EGEOD18494.hif), 1, row_medians_assayData) -->
+<!-- RLE_data <- as.data.frame(RLE_data) -->
+<!-- RLE_data_gathered <-  -->
+<!--   tidyr::gather(RLE_data, patient_array, log2_expression_deviation) -->
+<!-- ggplot2::ggplot(RLE_data_gathered, aes(patient_array, -->
+<!--                                        log2_expression_deviation)) +  -->
+<!--   geom_boxplot(outlier.shape = NA) +  -->
+<!--   ggtitle("EGEOD18494 MDA-MB231 - Raw data") + -->
+<!--   ylim(c(-4, 5)) +  -->
+<!--   theme(axis.text.x = element_text(colour = "aquamarine4",  -->
+<!--                                   angle = 60, size = 6.5, hjust = 1 , -->
+<!--                                   face = "bold")) -->
+<!-- row_medians_assayData <-  -->
+<!--   Biobase::rowMedians(as.matrix(t(expr.EGEOD18494.tdm))) -->
+<!-- RLE_data <- sweep(t(expr.EGEOD18494.tdm), 1, row_medians_assayData) -->
+<!-- RLE_data <- as.data.frame(RLE_data) -->
+<!-- RLE_data_gathered <-  -->
+<!--   tidyr::gather(RLE_data, patient_array, log2_expression_deviation) -->
+<!-- ggplot2::ggplot(RLE_data_gathered, aes(patient_array, -->
+<!--                                        log2_expression_deviation)) +  -->
+<!--   geom_boxplot(outlier.shape = NA) +  -->
+<!--   ylim(c(-4, 5)) +  -->
+<!--   ggtitle("EGEOD18494 MDA-MB231 - TDM data") + -->
+<!--   theme(axis.text.x = element_text(colour = "aquamarine4",  -->
+<!--                                   angle = 60, size = 6.5, hjust = 1 , -->
+<!--                                   face = "bold")) -->
+<!-- rm(RLE_data, RLE_data_gathered, row_medians_assayData) -->
+<!-- ``` -->
 
     require(BiTrinA)
 
@@ -245,11 +210,11 @@ No VHL in GSE41491
 
 |       | Norm.0.1 | Norm.0.2 | Norm.0.3 | Hypo.16h.1 | Hypo.16h.2 | Hypo.16h.3 | Hypo.32h.1 | Hypo.32h.2 | Hypo.32h.3 | Hypo.48h.1 | Hypo.48h.2 | Hypo.48h.3 | threshold | p.value | symbol |
 |:------|---------:|---------:|---------:|-----------:|-----------:|-----------:|-----------:|-----------:|-----------:|-----------:|-----------:|-----------:|----------:|--------:|:-------|
-| EP300 |        0 |        0 |        0 |          1 |          0 |          0 |          0 |          1 |          1 |          0 |          0 |          0 |  9.133766 |   0.345 | EP300  |
 | HIF1A |        1 |        1 |        1 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  8.699331 |   0.001 | HIF1A  |
-| MDM2  |        1 |        1 |        1 |          1 |          1 |          1 |          1 |          0 |          1 |          1 |          1 |          1 |  6.619755 |   1.000 | MDM2   |
 | TP53  |        0 |        1 |        1 |          1 |          1 |          1 |          0 |          0 |          1 |          0 |          0 |          0 |  9.531254 |   0.001 | TP53   |
-| VHL   |        1 |        1 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  9.558766 |   0.773 | VHL    |
+| MDM2  |        1 |        1 |        1 |          1 |          1 |          1 |          1 |          0 |          1 |          1 |          1 |          1 |  6.619755 |   1.000 | MDM2   |
+| VHL   |        1 |        1 |        0 |          0 |          0 |          0 |          0 |          0 |          0 |          1 |          1 |          1 |  9.558766 |   0.797 | VHL    |
+| EP300 |        0 |        0 |        0 |          1 |          0 |          0 |          0 |          1 |          1 |          0 |          0 |          0 |  9.133766 |   0.396 | EP300  |
 
     expr.GSE47533.hif.mean <- expr.GSE47533.hif.bin %>%
      mutate(Norm = rowMeans(dplyr::select(., starts_with("Norm"))),
@@ -278,14 +243,14 @@ No VHL in GSE41491
       scale_x_discrete(breaks = c(1, 2, 3, 4), 
                      labels = c("Normoxia", "Hypoxia: 16h" , "Hypoxia: 32h" , "Hypoxia: 48h")) +
       xlab("Conditions") + ylab("Gene Expression") + 
-      ggtitle("GSE47533 MCF7 - Raw data") +
-      theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=.8, hjust=0.8)) +
+      ggtitle("GSE47533 MCF7") +
+      theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=0.5, hjust=1)) +
       #geom_line(aes(linetype=Symbol, color=Symbol)) +
-      facet_wrap(~ symbol) 
+      facet_wrap(~ symbol, nrow = 1) 
 
     p.MCF7
 
-![](figs/BoolNetInfer-unnamed-chunk-10-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-8-1.png)<!-- -->
 
 # EGEOD18494
 
@@ -339,20 +304,20 @@ No VHL in GSE41491
       scale_x_discrete(breaks = c(1, 2, 3, 4), 
                      labels = c("Normoxia", "Hypoxia: 4h" , "Hypoxia: 8h" , "Hypoxia: 12h")) +
       xlab("Conditions") + ylab("Gene Expression") +
-      ggtitle("EGEOD18494 MDA-MB231 - Raw data") +
+      ggtitle("EGEOD18494 MDA-MB231") +
       theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=.8, hjust=0.8)) +
       #geom_line(aes(linetype=Symbol, color=Symbol)) +
-      facet_wrap(~ symbol) 
+      facet_wrap(~ symbol, nrow = 1) 
 
     p.MDA
 
-![](figs/BoolNetInfer-unnamed-chunk-11-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-9-1.png)<!-- -->
 
     library(cowplot)
 
-    plot_grid(p.MDA, p.MCF7, labels = c('A', 'B'))
+    plot_grid(p.MDA, p.MCF7, labels = c('A', 'B'), ncol = 1)
 
-![](figs/BoolNetInfer-unnamed-chunk-12-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-10-1.png)<!-- -->
 
 # Heatmaps - EGEOD18494
 
@@ -412,7 +377,7 @@ other words, we can assume the normality.
              legend_labels = (c("small dist", "large dist")),
              main = "Clustering of Samples (EGEOD18494)")
 
-![](figs/BoolNetInfer-unnamed-chunk-14-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-12-1.png)<!-- -->
 
     dists <- as.matrix(dist(expr.EGEOD18494.hif, method = "euclidean")) 
     rownames(dists) <- rownames(expr.EGEOD18494.hif)
@@ -423,14 +388,14 @@ other words, we can assume the normality.
              #annotation_col = annotation_for_heatmap,
              #annotation_colors = ann_colors,
              legend = TRUE, 
-             display_numbers = T,
+             #display_numbers = T,
              treeheight_row = 0,
              legend_breaks = c(min(dists, na.rm = TRUE), 
                                max(dists, na.rm = TRUE)), 
              legend_labels = (c("small dist", "large dist")),
              main = "Clustering of Gene Expression \n Euclidian Distance  (EGEOD18494)")
 
-![](figs/BoolNetInfer-unnamed-chunk-15-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-13-1.png)<!-- -->
 
     #---------------------------------------------------------------------------------
 
@@ -442,7 +407,7 @@ other words, we can assume the normality.
 
     p1 <- pheatmap(dists, 
              legend = TRUE, 
-             display_numbers = T,
+             #display_numbers = T,
              treeheight_row = 0,
              legend_breaks = c(min(dists, na.rm = TRUE), 
                                max(dists, na.rm = TRUE)), 
@@ -488,7 +453,7 @@ other words, we can assume the normality.
              #annotation_col = annotation_for_heatmap,
              #annotation_colors = ann_colors,
              legend = TRUE, 
-             display_numbers = T,
+             #display_numbers = T,
              treeheight_row = 0,
              legend_breaks = c(min(dists, na.rm = TRUE), 
                                max(dists, na.rm = TRUE)), 
@@ -499,47 +464,51 @@ other words, we can assume the normality.
     gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable), 
                             nrow = 2 , labels=c('A', 'B'))
 
-![](figs/BoolNetInfer-unnamed-chunk-16-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-14-1.png)<!-- -->
 
     data.EGEOD18494$time <- factor(data.EGEOD18494$time,  levels =  c("control", "4h" , "8h" , "12h 4h"))
 
-    dists <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "spearman")
-    rownames(dists) <- rownames(expr.EGEOD18494.hif)
+    dists.EGEOD18494_spearman <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "spearman")
+    rownames(dists.EGEOD18494_spearman) <- rownames(expr.EGEOD18494.hif)
     hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
-    colnames(dists) <- rownames(expr.EGEOD18494.hif)
-    diag(dists) <- NA 
+    colnames(dists.EGEOD18494_spearman) <- rownames(expr.EGEOD18494.hif)
+    diag(dists.EGEOD18494_spearman) <- NA 
 
-    pheatmap(dists, #row = (hmcol), 
+    ps.EGEOD18494_spearman <- pheatmap(dists.EGEOD18494_spearman, #row = (hmcol), 
+                                   #annotation_col = annotation_for_heatmap,
+                                   #annotation_colors = ann_colors,
+                                   legend = TRUE, 
+                                   display_numbers = T,
+                                   cluster_rows = F,
+                                   cluster_cols = F,
+                                   treeheight_row = 0,
+                                   legend_breaks = c(min(dists.EGEOD18494_spearman, na.rm = TRUE), 
+                                                     max(dists.EGEOD18494_spearman, na.rm = TRUE)), 
+                                   legend_labels = (c("-1", "1")),
+                                   main = "Spearman Correlation (EGEOD18494)")
+
+![](figs/BoolNetInfer-unnamed-chunk-15-1.png)<!-- -->
+
+    dists.EGEOD18494_pearson <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "pearson")
+    rownames(dists.EGEOD18494_pearson) <- rownames(expr.EGEOD18494.hif)
+    hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
+    colnames(dists.EGEOD18494_pearson) <- rownames(expr.EGEOD18494.hif)
+    diag(dists.EGEOD18494_pearson) <- NA 
+
+    ps.EGEOD18494_pearson <- pheatmap(dists.EGEOD18494_pearson, #row = (hmcol), 
              #annotation_col = annotation_for_heatmap,
              #annotation_colors = ann_colors,
              legend = TRUE, 
              display_numbers = T,
+             cluster_rows = F,
+             cluster_cols = F,
              treeheight_row = 0,
-             legend_breaks = c(min(dists, na.rm = TRUE), 
-                               max(dists, na.rm = TRUE)), 
+             legend_breaks = c(min(dists.EGEOD18494_pearson, na.rm = TRUE), 
+                               max(dists.EGEOD18494_pearson, na.rm = TRUE)), 
              legend_labels = (c("-1", "1")),
-             main = "Clustering of Gene Expression \n Spearman Correlation (EGEOD18494)")
+             main = "Pearson Correlation (EGEOD18494)")
 
-![](figs/BoolNetInfer-unnamed-chunk-17-1.png)<!-- -->
-
-    dists <- cor(t(expr.EGEOD18494.hif), use = "pairwise.complete.obs", method = "pearson")
-    rownames(dists) <- rownames(expr.EGEOD18494.hif)
-    hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
-    colnames(dists) <- rownames(expr.EGEOD18494.hif)
-    diag(dists) <- NA 
-
-    pheatmap(dists, #row = (hmcol), 
-             #annotation_col = annotation_for_heatmap,
-             #annotation_colors = ann_colors,
-             legend = TRUE, 
-             display_numbers = T,
-             treeheight_row = 0,
-             legend_breaks = c(min(dists, na.rm = TRUE), 
-                               max(dists, na.rm = TRUE)), 
-             legend_labels = (c("-1", "1")),
-             main = "Clustering of Gene Expression \n Spearman Correlation (EGEOD18494)")
-
-![](figs/BoolNetInfer-unnamed-chunk-18-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-16-1.png)<!-- -->
 
 # Heatmaps - GSE47533
 
@@ -598,7 +567,7 @@ other words, we can assume the normality.
              legend_labels = (c("small dist", "large dist")),
              main = "Clustering of Samples (GSE47533)")
 
-![](figs/BoolNetInfer-unnamed-chunk-20-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-18-1.png)<!-- -->
 
     dists <- as.matrix(dist(expr.GSE47533.hif, method = "euclidean")) 
     rownames(dists) <- rownames(expr.GSE47533.hif)
@@ -613,7 +582,7 @@ other words, we can assume the normality.
              legend_labels = (c("small dist", "large dist")),
              main = "Clustering of Gene Expression \n Euclidian Distance  (GSE47533)")
 
-![](figs/BoolNetInfer-unnamed-chunk-21-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-19-1.png)<!-- -->
 
     #---------------------------------------------------------------------------------
 
@@ -654,39 +623,73 @@ other words, we can assume the normality.
     gridExtra::grid.arrange(grobs=list(p1$gtable, p2$gtable), 
                             nrow = 2 , labels=c('A', 'B'))
 
-![](figs/BoolNetInfer-unnamed-chunk-22-1.png)<!-- -->
+![](figs/BoolNetInfer-unnamed-chunk-20-1.png)<!-- -->
 
-    dists <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "spearman")
-    rownames(dists) <- rownames(expr.GSE47533.hif)
-    colnames(dists) <- rownames(expr.GSE47533.hif)
-    diag(dists) <- NA 
+    dists.GSE47533_spearman <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "spearman")
+    rownames(dists.GSE47533_spearman) <- rownames(expr.GSE47533.hif)
+    colnames(dists.GSE47533_spearman) <- rownames(expr.GSE47533.hif)
+    diag(dists.GSE47533_spearman) <- NA 
 
-    pheatmap(dists, 
+    ps.GSE47533_spearman <- pheatmap(dists.GSE47533_spearman, 
+                               legend = TRUE, 
+                               display_numbers = T,
+                               treeheight_row = 0,
+                               cluster_rows = F,
+                               cluster_cols = F,
+                               legend_breaks = c(min(dists.GSE47533_spearman, na.rm = TRUE), 
+                                                 max(dists.GSE47533_spearman, na.rm = TRUE)), 
+                               legend_labels = (c("-1", "1")),
+                               main = "Spearman Correlation (GSE47533)")
+
+![](figs/BoolNetInfer-unnamed-chunk-21-1.png)<!-- -->
+
+    dists.GSE47533_pearson <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "pearson")
+    rownames(dists.GSE47533_pearson) <- rownames(expr.GSE47533.hif)
+    colnames(dists.GSE47533_pearson) <- rownames(expr.GSE47533.hif)
+    diag(dists.GSE47533_pearson) <- NA 
+
+    ps.GSE47533_pearson <- pheatmap(dists.GSE47533_pearson, 
              legend = TRUE, 
              display_numbers = T,
+             cluster_rows = F,
+             cluster_cols = F,
              treeheight_row = 0,
-             legend_breaks = c(min(dists, na.rm = TRUE), 
-                               max(dists, na.rm = TRUE)), 
+             legend_breaks = c(min(dists.GSE47533_pearson, na.rm = TRUE), 
+                               max(dists.GSE47533_pearson, na.rm = TRUE)), 
              legend_labels = (c("-1", "1")),
-             main = "Clustering of Gene Expression \n Spearman Correlation (GSE47533)")
+             main = "Pearson Correlation (GSE47533)")
+
+![](figs/BoolNetInfer-unnamed-chunk-22-1.png)<!-- -->
+
+    gridExtra::grid.arrange(grobs=list(ps.EGEOD18494_spearman$gtable, ps.GSE47533_spearman$gtable), 
+                            nrow = 1 , labels=c('A', 'B'))
 
 ![](figs/BoolNetInfer-unnamed-chunk-23-1.png)<!-- -->
 
-    dists <- cor(t(expr.GSE47533.hif), use = "pairwise.complete.obs", method = "pearson")
-    rownames(dists) <- rownames(expr.GSE47533.hif)
-    colnames(dists) <- rownames(expr.GSE47533.hif)
-    diag(dists) <- NA 
+    cortest(dists.EGEOD18494_spearman, dists.GSE47533_spearman)
 
-    pheatmap(dists, 
-             legend = TRUE, 
-             display_numbers = T,
-             treeheight_row = 0,
-             legend_breaks = c(min(dists, na.rm = TRUE), 
-                               max(dists, na.rm = TRUE)), 
-             legend_labels = (c("-1", "1")),
-             main = "Clustering of Gene Expression \n Pearson Correlation (GSE47533)")
+    ## Warning in cortest(dists.EGEOD18494_spearman, dists.GSE47533_spearman): n not
+    ## specified, 100 used
+
+    ## Tests of correlation matrices 
+    ## Call:cortest(R1 = dists.EGEOD18494_spearman, R2 = dists.GSE47533_spearman)
+    ##  Chi Square value 78.83  with df =  10   with probability < 8.5e-13 
+    ## z of differences =  0.24
+
+    gridExtra::grid.arrange(grobs=list(ps.EGEOD18494_pearson$gtable, ps.GSE47533_pearson$gtable), 
+                            nrow = 1 , labels=c('A', 'B'))
 
 ![](figs/BoolNetInfer-unnamed-chunk-24-1.png)<!-- -->
+
+    cortest(dists.EGEOD18494_pearson, dists.GSE47533_pearson)
+
+    ## Warning in cortest(dists.EGEOD18494_pearson, dists.GSE47533_pearson): n not
+    ## specified, 100 used
+
+    ## Tests of correlation matrices 
+    ## Call:cortest(R1 = dists.EGEOD18494_pearson, R2 = dists.GSE47533_pearson)
+    ##  Chi Square value 127.9  with df =  10   with probability < 1.3e-22 
+    ## z of differences =  0.4
 
 # Heatmaps - All datasets Breast Cell-lines (E-GEOD-18494, GSE47533, and GSE41491)
 
