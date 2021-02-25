@@ -452,6 +452,97 @@ breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
 
 <!-- ``` -->
 
+# Mean BEFORE binarize the replicates of breast cancer net :
+
+``` r
+par(mfrow = c(1,1))
+plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 time-points, Mean BEFORE binarize replicates")
+```
+
+![](figs/GSE47533-unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+print(meanBin.net)
+```
+
+    ## Probabilistic Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## 
+    ## Alternative transition functions for gene EP300:
+    ## EP300 = (TP53 & !VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!TP53 & VHL) | (TP53 & !VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!HIF1A & TP53) ( probability: 0.125, error: 0)
+    ## EP300 = (!HIF1A & TP53) | (HIF1A & !TP53) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !VHL) | (EP300 & VHL) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !HIF1A) ( probability: 0.125, error: 0)
+    ## EP300 = (!EP300 & !HIF1A) | (EP300 & HIF1A) ( probability: 0.125, error: 0)
+    ## 
+    ## Alternative transition functions for gene HIF1A:
+    ## HIF1A = (!TP53) ( probability: 0.5, error: 0)
+    ## HIF1A = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene MDM2:
+    ## MDM2 = (!TP53) ( probability: 0.5, error: 0)
+    ## MDM2 = (EP300) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene TP53:
+    ## TP53 = (VHL) ( probability: 0.5, error: 0)
+    ## TP53 = (HIF1A) ( probability: 0.5, error: 0)
+    ## 
+    ## Alternative transition functions for gene VHL:
+    ## VHL = (!TP53) ( probability: 0.5, error: 0)
+    ## VHL = (EP300) ( probability: 0.5, error: 0)
+
+``` r
+try({
+sink("../data/ATOTS_inferred_GSE47533_meanBin.bn")
+cat("targets, factors\n")
+cat("EP300, (!TP53 | HIF1A) \n")
+cat("HIF1A,  !EP300 \n")
+cat("MDM2, (TP53 | !HIF1A)\n")
+cat("TP53, EP300\n")
+cat("VHL, (!TP53 | HIF1A)\n")
+sink()}, silent = T)
+```
+
+``` r
+net <- loadNetwork("../data/ATOTS_inferred_GSE47533_meanBin.bn")
+print(net)
+```
+
+    ## Boolean network with 5 genes
+    ## 
+    ## Involved genes:
+    ## EP300 HIF1A MDM2 TP53 VHL
+    ## 
+    ## Transition functions:
+    ## EP300 = (!TP53 | HIF1A)
+    ## HIF1A = !EP300
+    ## MDM2 = (TP53 | !HIF1A)
+    ## TP53 = EP300
+    ## VHL = (!TP53 | HIF1A)
+
+``` r
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn, title = "MCF7 breast, mean Before binarize replicates")
+```
+
+![](figs/GSE47533-unnamed-chunk-14-1.png)<!-- -->
+
+    ## $`4`
+    ##       Attr1.1 Attr1.2 Attr1.3 Attr1.4
+    ## EP300       0       1       1       0
+    ## HIF1A       1       1       0       0
+    ## MDM2        1       0       0       1
+    ## TP53        0       0       1       1
+    ## VHL         0       1       1       0
+
 # Mean AFTER binarize the replicates of breast cancer net :
 
 ``` r
@@ -465,7 +556,7 @@ plot(breast_MCF7.3.p, vertex.label.color="#440154ff", vertex.color="lightblue", 
      main="MCF7 breast\n 4 time-points, replicate 3")
 ```
 
-![](figs/GSE47533-unnamed-chunk-10-1.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(1,1))
@@ -473,7 +564,7 @@ plot(mean.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.fr
      main="MCF7 breast\n 4 time-points, Mean replicates")
 ```
 
-![](figs/GSE47533-unnamed-chunk-11-1.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 print(mean.net)
@@ -561,10 +652,10 @@ print(net)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "MCF7 breast, mean After binarize replicates")
 ```
 
-![](figs/GSE47533-unnamed-chunk-15-1.png)<!-- -->![](figs/GSE47533-unnamed-chunk-15-2.png)<!-- -->
+![](figs/GSE47533-unnamed-chunk-20-1.png)<!-- -->![](figs/GSE47533-unnamed-chunk-20-2.png)<!-- -->
 
     ## $`1`
     ##       Attr1.1
@@ -581,88 +672,3 @@ plotAttractors(attr.syn)
     ## MDM2        0       1       0       1       1       1       0
     ## TP53        0       0       1       0       1       1       1
     ## VHL         0       1       1       0       1       0       0
-
-# Mean BEFORE binarize the replicates of breast cancer net :
-
-``` r
-par(mfrow = c(1,1))
-plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, Mean BEFORE binarize replicates")
-```
-
-![](figs/GSE47533-unnamed-chunk-16-1.png)<!-- -->
-
-``` r
-print(meanBin.net)
-```
-
-    ## Probabilistic Boolean network with 5 genes
-    ## 
-    ## Involved genes:
-    ## EP300 HIF1A MDM2 TP53 VHL
-    ## 
-    ## Transition functions:
-    ## 
-    ## Alternative transition functions for gene EP300:
-    ## EP300 = (TP53 & !VHL) ( probability: 0.125, error: 0)
-    ## EP300 = (!TP53 & VHL) | (TP53 & !VHL) ( probability: 0.125, error: 0)
-    ## EP300 = (!HIF1A & TP53) ( probability: 0.125, error: 0)
-    ## EP300 = (!HIF1A & TP53) | (HIF1A & !TP53) ( probability: 0.125, error: 0)
-    ## EP300 = (!EP300 & !VHL) ( probability: 0.125, error: 0)
-    ## EP300 = (!EP300 & !VHL) | (EP300 & VHL) ( probability: 0.125, error: 0)
-    ## EP300 = (!EP300 & !HIF1A) ( probability: 0.125, error: 0)
-    ## EP300 = (!EP300 & !HIF1A) | (EP300 & HIF1A) ( probability: 0.125, error: 0)
-    ## 
-    ## Alternative transition functions for gene HIF1A:
-    ## HIF1A = (!TP53) ( probability: 0.5, error: 0)
-    ## HIF1A = (EP300) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene MDM2:
-    ## MDM2 = (!TP53) ( probability: 0.5, error: 0)
-    ## MDM2 = (EP300) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene TP53:
-    ## TP53 = (VHL) ( probability: 0.5, error: 0)
-    ## TP53 = (HIF1A) ( probability: 0.5, error: 0)
-    ## 
-    ## Alternative transition functions for gene VHL:
-    ## VHL = (!TP53) ( probability: 0.5, error: 0)
-    ## VHL = (EP300) ( probability: 0.5, error: 0)
-
-<!-- ```{r} -->
-
-<!-- try({ -->
-
-<!-- sink("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
-
-<!-- cat("targets, factors\n") -->
-
-<!-- cat("EP300, (!TP53 | HIF1A) \n") -->
-
-<!-- cat("HIF1A,  !EP300 \n") -->
-
-<!-- cat("MDM2, (TP53 | !HIF1A)\n") -->
-
-<!-- cat("TP53, EP300\n") -->
-
-<!-- cat("VHL, (!TP53 | HIF1A)\n") -->
-
-<!-- sink()}, silent = T) -->
-
-<!-- ``` -->
-
-<!-- ```{r} -->
-
-<!-- net <- loadNetwork("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
-
-<!-- print(net) -->
-
-<!-- ``` -->
-
-<!-- ```{r} -->
-
-<!-- attr.syn <- getAttractors(net, type = "synchronous") -->
-
-<!-- plotAttractors(attr.syn) -->
-
-<!-- ``` -->

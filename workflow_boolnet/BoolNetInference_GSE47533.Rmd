@@ -350,6 +350,45 @@ breast_MCF7.3.p <- plotNetworkWiring(breast_MCF7.3.net, plotIt=F)
 <!--      main="MCF7 breast\n 3 time-points, without Normoxia time-point") -->
 <!-- ``` -->
 
+
+# Mean BEFORE binarize the replicates of breast cancer net :
+
+```{r}
+par(mfrow = c(1,1))
+plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
+     main="MCF7 breast\n 4 time-points, Mean BEFORE binarize replicates")
+```
+
+```{r}
+print(meanBin.net)
+```
+
+```{r}
+
+try({
+sink("../data/ATOTS_inferred_GSE47533_meanBin.bn")
+cat("targets, factors\n")
+cat("EP300, (!TP53 | HIF1A) \n")
+cat("HIF1A,  !EP300 \n")
+cat("MDM2, (TP53 | !HIF1A)\n")
+cat("TP53, EP300\n")
+cat("VHL, (!TP53 | HIF1A)\n")
+sink()}, silent = T)
+```
+
+
+```{r}
+net <- loadNetwork("../data/ATOTS_inferred_GSE47533_meanBin.bn")
+print(net)
+```
+
+
+```{r}
+
+attr.syn <- getAttractors(net, type = "synchronous")
+plotAttractors(attr.syn, title = "MCF7 breast, mean Before binarize replicates")
+```
+
 # Mean AFTER binarize the replicates of breast cancer net :
 
 ```{r}
@@ -411,45 +450,5 @@ print(net)
 ```{r}
 
 attr.syn <- getAttractors(net, type = "synchronous")
-plotAttractors(attr.syn)
+plotAttractors(attr.syn, title = "MCF7 breast, mean After binarize replicates")
 ```
-
-
-
-# Mean BEFORE binarize the replicates of breast cancer net :
-
-```{r}
-par(mfrow = c(1,1))
-plot(meanBin.p, vertex.label.color="#440154ff", vertex.color="lightblue", vertex.frame.color="white", layout=layout_in_circle, edge.curved=.3,
-     main="MDA-MB231 breast\n 4 time-points, Mean BEFORE binarize replicates")
-```
-
-```{r}
-print(meanBin.net)
-```
-
-<!-- ```{r} -->
-
-<!-- try({ -->
-<!-- sink("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
-<!-- cat("targets, factors\n") -->
-<!-- cat("EP300, (!TP53 | HIF1A) \n") -->
-<!-- cat("HIF1A,  !EP300 \n") -->
-<!-- cat("MDM2, (TP53 | !HIF1A)\n") -->
-<!-- cat("TP53, EP300\n") -->
-<!-- cat("VHL, (!TP53 | HIF1A)\n") -->
-<!-- sink()}, silent = T) -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- net <- loadNetwork("../data/ATOTS_inferred_GSE47533_meanBin.bn") -->
-<!-- print(net) -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-
-<!-- attr.syn <- getAttractors(net, type = "synchronous") -->
-<!-- plotAttractors(attr.syn) -->
-<!-- ``` -->
