@@ -503,11 +503,11 @@ print(meanBin.net)
 try({
 sink("../data/ATOTS_inferred_GSE47533_meanBin.bn")
 cat("targets, factors\n")
-cat("EP300, (!TP53 | HIF1A) \n")
-cat("HIF1A,  !EP300 \n")
-cat("MDM2, (TP53 | !HIF1A)\n")
-cat("TP53, EP300\n")
-cat("VHL, (!TP53 | HIF1A)\n")
+cat("EP300, (!TP53 & VHL) | (TP53 & !VHL)  \n")
+cat("HIF1A,  (!TP53) | (EP300) \n")
+cat("MDM2, (!TP53) | (EP300)\n")
+cat("TP53, (VHL) | (HIF1A)\n")
+cat("VHL, (!TP53) |(EP300)\n")
 sink()}, silent = T)
 ```
 
@@ -522,11 +522,11 @@ print(net)
     ## EP300 HIF1A MDM2 TP53 VHL
     ## 
     ## Transition functions:
-    ## EP300 = (!TP53 | HIF1A)
-    ## HIF1A = !EP300
-    ## MDM2 = (TP53 | !HIF1A)
-    ## TP53 = EP300
-    ## VHL = (!TP53 | HIF1A)
+    ## EP300 = (!TP53 & VHL) | (TP53 & !VHL)
+    ## HIF1A = (!TP53) | (EP300)
+    ## MDM2 = (!TP53) | (EP300)
+    ## TP53 = (VHL) | (HIF1A)
+    ## VHL = (!TP53) |(EP300)
 
 ``` r
 attr.syn <- getAttractors(net, type = "synchronous")
@@ -535,13 +535,13 @@ plotAttractors(attr.syn, title = "MCF7 breast, mean Before binarize replicates")
 
 ![](figs/GSE47533-unnamed-chunk-14-1.png)<!-- -->
 
-    ## $`4`
-    ##       Attr1.1 Attr1.2 Attr1.3 Attr1.4
-    ## EP300       0       1       1       0
-    ## HIF1A       1       1       0       0
-    ## MDM2        1       0       0       1
-    ## TP53        0       0       1       1
-    ## VHL         0       1       1       0
+    ## $`5`
+    ##       Attr1.1 Attr1.2 Attr1.3 Attr1.4 Attr1.5
+    ## EP300       1       0       1       0       0
+    ## HIF1A       0       1       1       1       0
+    ## MDM2        0       1       1       1       0
+    ## TP53        0       0       1       1       1
+    ## VHL         0       1       1       1       0
 
 # Mean AFTER binarize the replicates of breast cancer net :
 

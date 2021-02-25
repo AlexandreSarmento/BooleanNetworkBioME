@@ -368,11 +368,11 @@ print(meanBin.net)
 try({
 sink("../data/ATOTS_inferred_GSE47533_meanBin.bn")
 cat("targets, factors\n")
-cat("EP300, (!TP53 | HIF1A) \n")
-cat("HIF1A,  !EP300 \n")
-cat("MDM2, (TP53 | !HIF1A)\n")
-cat("TP53, EP300\n")
-cat("VHL, (!TP53 | HIF1A)\n")
+cat("EP300, (!TP53 & VHL) | (TP53 & !VHL)  \n")
+cat("HIF1A,  (!TP53) | (EP300) \n")
+cat("MDM2, (!TP53) | (EP300)\n")
+cat("TP53, (VHL) | (HIF1A)\n")
+cat("VHL, (!TP53) |(EP300)\n")
 sink()}, silent = T)
 ```
 
