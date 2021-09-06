@@ -1,0 +1,370 @@
+---
+title: "Bin_Mean_EGEOD18494"
+author: "ASQ"
+date: "25/02/2021"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+packages_bioconductor = c("Biobase", "GEOquery", "vsn", "hgu133plus2.db")
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+#rm(package.check, packages_bioconductor, packages_cran)
+
+```
+
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/")
+load("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/data/data.EGEOD18494.Rdata")
+
+eset <- ExpressionSet(assayData = as.matrix(expr.EGEOD18494), 
+                      probeNames = row.names(expr.EGEOD18494))
+expr.EGEOD18494 <- exprs(justvsn(eset))
+
+```
+
+
+```{r}
+
+atots.symbols<- c("HIF1A","HIF1AN","PPP1R10","ATR","TP53","MDM2","AKT1","PFKL","VEGFA","BAX","PTEN","EP300")
+
+# PMAIP1 -> NOXA
+# BCL2L11 -> BIM
+# BCL2L2 -> BCL-w
+# BCL2L1 -> BCL-xL
+# BCL2 -> BCL-2
+
+# atots.symbols <- c("HIF1A","TP53","MDM2","ATR","EP300","CDKN1A","BAX","BAD","BBC3","BCL2",
+#                    "PMAIP1","BCL2L11","MCL1","BCL2L2","BCL2L1","BID","BAK1","BCL2", "CASP3")
+
+atots.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% atots.symbols]
+
+# Select the probes and genes
+expr.EGEOD18494.atots <- as.data.frame(expr.EGEOD18494) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% atots.probes) %>% 
+  merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% atots.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) 
+
+```
+
+
+```{r}
+
+binNet <- function(b){
+
+  cols <- data.EGEOD18494$codes %in% names(b)
+
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements  %>%
+  as.data.frame(.)  %>%
+  aggregate(., list(symbol = b$symbol), mean) %>%  # mean of binarized probes
+  mutate_at(vars(-symbol), funs(ifelse(. >= 0.5, 1, 0))) %>%  # consensus with a bies to 1 (>= 0.5)
+  #rbind(., c("O2", 1,0,0,0)) %>%
+    rename_at(vars(data.EGEOD18494$codes[cols] ),
+            ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>%
+  column_to_rownames("symbol")
+
+}
+```
+
+
+```{r}
+my_palette <- colorRampPalette(c("blue", "gray", "yellow"))(n = 299)
+col_breaks = c(seq(0,.1,length=100),  # for green
+               seq(.11,0.9,length=100),              # for yellow
+               seq(0.91,1,length=100))
+
+```
+
+
+```{r}
+plotHeatMap <- function(sample,titleDescripter,timePoints){  
+  #i, paste("test#",counter,sep=""),equiDistantTimePoints
+  #sample = avgSample1
+  #titleDescripter = "Healthy-1"
+  #timePoints = equiDistantTimePoints2
+  rnames <- rownames(sample)          # assign labels in column 1 to "rnames"                           
+  mat_data <- data.matrix(sample[,1:ncol(sample)])  # transform column 2- # of timepts into a matrix
+  rownames(mat_data) <- rnames                  # assign row names 
+  colnames(mat_data) <- timePoints
+  # creates a 5 x 5 inch image
+  outputName =paste(titleDescripter,".png",sep="") 
+  png(outputName,   # create PNG for the heat map        
+      width = 4*500,        # 5 x 300 pixels
+      height = 3*500,
+      res = 500,            # 300 pixels per inch
+      pointsize = 6)      # smaller font size
+  par(cex.main=0.8,cex.lab = 1)
+  heatmap.2(mat_data,
+            #cellnote = mat_data,  # same data set for cell labels
+            #main = titleDescripter, # heat map title
+            offsetCol = 2,
+            offsetRow = 0,
+            srtCol=270,
+            notecol="black",      # change font color of cell labels to black
+            density.info="none",  # turns off density plot inside color legend
+            trace="none",         # turns off trace lines inside the heat map
+            margins =c(9,12),     # widens margins around plot
+            col=my_palette,       # use on color palette defined earlier 
+            breaks=col_breaks,    # enable color transition at specified limits
+            dendrogram="none",    # don't draw dendrograms
+            Colv="NA",            # turn off column clustering
+            Rowv="NA",            # turn off row clustering
+            #srtCol=0,
+            adjCol= c(.5,.5),
+            adjRow= c(0,.5),
+            sepwidth=c(0.001,0.001),
+            sepcolor="black",
+            colsep=1:ncol(mat_data),
+            rowsep=1:nrow(mat_data),
+            cexRow = 1.0,
+            cexCol=.8,
+            # color key + density info
+            #key = TRUE,
+            keysize = 1,
+            #density.info=c("histogram","density","none"),
+            key.title = NA,
+            key.ylab = NA,
+            key.xlab = "Binarized Abundance",
+            key.ytickfun = NA
+  )
+  dev.off()               # close the PNG device  
+}
+```
+
+
+```{r}
+
+cellline.rep1 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer" &  data.EGEOD18494$rep == 3)
+
+breast1x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1])) %>% binNet(.)
+
+# breast1x %>% knitr::kable(.)
+
+breast2x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2])) %>% binNet(.)
+
+# breast2x  %>% knitr::kable(.)
+
+breast3x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3])) %>% binNet(.)
+
+# breast3x %>% knitr::kable(.)
+ # mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>% 
+ #    mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>% 
+ #    mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>% 
+ #    mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>% 
+   
+breast.mean <-
+cbind(breast1x,breast2x,breast3x) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>%
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>%
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>%
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>%
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
+  dplyr::select(c("no.ctrl","hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  #dplyr::select(c("no.ctrl","hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  #mutate_at(c("no.ctrl","hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%
+  mutate_at(c("no.ctrl","hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)
+  tibble::column_to_rownames('gene')
+
+breast.mean %>%  
+  knitr::kable(.) 
+
+```
+
+
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/WangGenes/AvgBin_Heatmap")
+allTimePoints = list(-4,4,8,12)
+plotHeatMap(breast.mean,"breast_KM_Wang",allTimePoints)
+
+```
+
+
+```{r}
+write.csv(breast.mean,"~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/ZhouGenes/bin_KM_breast.csv")
+
+```
+
+
+```{r}
+
+breast.mean.net <- reconstructNetwork(breast.mean,
+                  method="bestfit", maxK = 2,returnPBN=FALSE,readableFunctions=TRUE)
+
+print(breast.mean.net)
+
+```
+
+
+```{r}
+
+cellline.rep1 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "HepG2 hepatoma" &  data.EGEOD18494$rep == 3)
+
+hepatoma1x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>%
+  binNet(.)
+
+# hepatoma1x %>%
+#   knitr::kable(.)
+
+hepatoma2x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>%
+  binNet(.)
+
+# hepatoma2x %>%
+#   knitr::kable(.)
+
+hepatoma3x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>%
+  binNet(.)
+
+# hepatoma3x %>%
+#   knitr::kable(.)
+
+hepatoma.mean <-
+cbind(hepatoma1x,hepatoma2x,hepatoma3x) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>%
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>%
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>%
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>%
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
+  dplyr::select(c("no.ctrl","hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  mutate_at(c("no.ctrl","hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)
+  tibble::column_to_rownames('gene')
+
+hepatoma.mean %>%  
+ knitr::kable(.)
+
+```
+
+```{r}
+allTimePoints = list(-4,4,8,12)
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/WangGenes/AvgBin_Heatmap")
+
+plotHeatMap(hepatoma.mean,"hepatoma_KM_Wang",allTimePoints)
+
+```
+
+```{r}
+
+write.csv(hepatoma.mean,"~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/ten_genes/time_serie/hepG2_bin_KM.csv")
+```
+
+
+```{r}
+
+hepatoma.mean.net <- reconstructNetwork(hepatoma.mean,maxK=2,
+                               method="bestfit", returnPBN=FALSE,readableFunctions=TRUE)
+
+print(hepatoma.mean.net)
+
+```
+
+
+```{r}
+
+cellline.rep1 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 1)
+cellline.rep2 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 2)
+cellline.rep3 <- (data.EGEOD18494$cell_line == "U87 glioma" &  data.EGEOD18494$rep == 3)
+
+glioma1x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep1]))  %>%
+  binNet(.)
+
+# glioma1x %>%
+#   knitr::kable(.)
+
+glioma2x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep2]))  %>%
+  binNet(.)
+
+# glioma2x %>%
+#   knitr::kable(.)
+
+glioma3x <-
+expr.EGEOD18494.atots %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.rep3]))  %>%
+  binNet(.)
+
+# glioma3x %>%
+#   knitr::kable(.)
+
+glioma.mean <-
+cbind(glioma1x,glioma2x,glioma3x) %>%
+  tibble::rownames_to_column('gene') %>%
+  mutate_at(vars(-gene), as.numeric) %>%
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>%
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>%
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>%
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>%
+  dplyr::select(c("no.ctrl","hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  #dplyr::select(c("no.ctrl","hy.4h", "hy.8h", "hy.12h", "gene")) %>%
+  #mutate_at(c("no.ctrl","hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%
+  mutate_at(c("no.ctrl","hy.4h", "hy.8h", "hy.12h"), funs(ifelse(. >= 0.5, 1, 0)))  %>%  # consensus with a bies to 1 (>= 0.5)
+  tibble::column_to_rownames('gene')
+
+glioma.mean %>%  
+  knitr::kable(.) 
+
+
+```
+
+
+```{r}
+allTimePoints = list(-4,4,8,12)
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/WangGenes/AvgBin_Heatmap")
+plotHeatMap(glioma.mean,"glioma_KM_Wang",allTimePoints)
+
+```
+
+
+```{r}
+
+glioma.mean.net <- reconstructNetwork(glioma.mean,
+                               method="reveal",maxK = 2,returnPBN=FALSE,readableFunctions=TRUE)
+
+print(glioma.mean.net)
+
+```
