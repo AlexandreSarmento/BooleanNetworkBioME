@@ -1,0 +1,287 @@
+---
+---
+title: "binarizations"
+author: "PATRICK TERREMATTE"
+date: "28/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs","Binarize","BiTrinA","BoolNet")
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+packages_bioconductor = c("Biobase", "GEOquery", "vsn", "hgu133plus2.db")
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+rm(package.check, packages_bioconductor, packages_cran)
+
+```
+
+```{r}
+library(ellipsis)
+library(gplots)
+library(RColorBrewer)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+```
+
+## VARIÁVEIS AUXILIAR PARA COR DOS MAPAS DE CALOR DA BINARIZAÇÃO
+```{r}
+
+my_palette <- colorRampPalette(c("blue", "gray", "yellow"))(n = 299)
+col_breaks = c(seq(0,.1,length=100),  # for green
+               seq(.11,0.9,length=100),              # for yellow
+               seq(0.91,1,length=100))
+
+```
+
+## FUNÇÃO QUE GERA O MAPA DE CALOR DA BINARIZAÇÃO
+```{r}
+plotHeatMap <- function(sample,titleDescripter,timePoints){  
+  #i, paste("test#",counter,sep=""),equiDistantTimePoints
+  #sample = avgSample1
+  #titleDescripter = "Healthy-1"
+  #timePoints = equiDistantTimePoints2
+  rnames <- rownames(sample)          # assign labels in column 1 to "rnames"                           
+  mat_data <- data.matrix(sample[,1:ncol(sample)])  # transform column 2- # of timepts into a matrix
+  rownames(mat_data) <- rnames                  # assign row names 
+  colnames(mat_data) <- timePoints
+  # creates a 5 x 5 inch image
+  outputName =paste(titleDescripter,".png",sep="") 
+  png(outputName,   # create PNG for the heat map        
+      width = 4*500,        # 5 x 300 pixels
+      height = 3*500,
+      res = 500,            # 300 pixels per inch
+      pointsize = 6)      # smaller font size
+  par(cex.main=0.8,cex.lab = 1)
+  heatmap.2(mat_data,
+            #cellnote = mat_data,  # same data set for cell labels
+            #main = titleDescripter, # heat map title
+            offsetCol = 2,
+            offsetRow = 0,
+            srtCol=270,
+            notecol="black",      # change font color of cell labels to black
+            density.info="none",  # turns off density plot inside color legend
+            trace="none",         # turns off trace lines inside the heat map
+            margins =c(9,12),     # widens margins around plot
+            col=my_palette,       # use on color palette defined earlier 
+            breaks=col_breaks,    # enable color transition at specified limits
+            dendrogram="none",    # don't draw dendrograms
+            Colv="NA",            # turn off column clustering
+            Rowv="NA",            # turn off row clustering
+            #srtCol=0,
+            adjCol= c(.5,.5),
+            adjRow= c(0,.5),
+            sepwidth=c(0.001,0.001),
+            sepcolor="black",
+            colsep=1:ncol(mat_data),
+            rowsep=1:nrow(mat_data),
+            cexRow = 1.0,
+            cexCol=.8,
+            # color key + density info
+            #key = TRUE,
+            keysize = 1,
+            #density.info=c("histogram","density","none"),
+            key.title = NA,
+            key.ylab = NA,
+            key.xlab = "Binarized Abundance",
+            key.ytickfun = NA
+  )
+  dev.off()               # close the PNG device  
+}
+```
+# CHAMA O DATASET
+
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN")
+load("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/data/data.EGEOD18494.Rdata")
+
+eset <- ExpressionSet(assayData = as.matrix(expr.EGEOD18494),probeNames = row.names(expr.EGEOD18494))
+expr.EGEOD18494 <- exprs(justvsn(eset))
+
+```
+
+# ORGANIZA O DATASET CONFORME GENES DE INTERESSE
+```{r}
+
+netnodes.symbols<- c("HIF1A","CDKN1A","ATR","TP53","MDM2",
+                     "AKT1","BBC3","MIR17HG","PTEN","BCL2L11",
+                     "FOXO3","CASP3","CYCS","EP300")
+
+netnodes.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% netnodes.symbols]
+
+# Select the probes and genes
+expr.EGEOD18494.netnodes <- as.data.frame(expr.EGEOD18494) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% netnodes.probes) %>% 
+  merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% netnodes.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) 
+
+```
+
+## CÁLCULO DA MÉDIA DAS AMOSTRAS
+```{r}
+
+meanExpr <- function(b){
+  
+  cols <- data.EGEOD18494$codes %in% names(b)
+  
+  b <-b %>%
+  rename_at(vars(data.EGEOD18494$codes[cols] ),
+             ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>% 
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>% 
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>% 
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>% 
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>% 
+  aggregate(., list(symbol = b$symbol), median) %>%
+  dplyr::select(c("symbol","no.ctrl","hy.4h", "hy.8h", "hy.12h")) 
+
+}
+```
+
+```{r}
+
+# ESTA FUNÇÃO FOI UMA GAMBIARRA QUE FIZ SOMENTE PARA QUE QUANDO PROCEDESSE COM A BINARIZAÇÃO, A VARIÁVEL DE SAÍDA APRESENTASSE O NOME DO GENE A CADA LINHA
+checkBin <- function(k){
+  return (k*1)
+}
+```
+## FUNÇÃO QUE BINARIZA NO K-MEANS TRADICIONAL
+```{r}
+
+# FUNÇÃO QUE BINARIZA NO K-MEANS TRADICIONAL PARA REDE BOOLEANA, ISTO É, AGRUPAMENTO DE DADOS EM DOIS GRANDES GRUPOS, ONDE UM
+# SERÁ BBINARIZADO PARA 1 E OUTRO PARA ZERO
+binKM1 <- function(b){
+
+  cols <- names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements %>%
+  as.data.frame(.) %>%
+  aggregate(., list(symbol = b$symbol), checkBin) %>%
+    rename_at(vars(b$cols ),
+             ~paste0(substr(b$cols,1,2),".",
+                     b$time[cols],".")) 
+  
+}
+```
+## FUNÇÃO QUE BINARIZA PELO MÉTODO BASC
+```{r}
+
+# FUNÇÃO QUE BINARIZA PELO MÉTODO BASC (BINARIZATION ACROSS MULTIPLE SCALES) DA CLASSE JUMP-BASED.  
+binBASC <- function(v){
+
+  cols <- names(v)
+  binarizeMatrix(v[,-1], method = "BASCA",tau=0.2) %>%
+  as.data.frame(.) %>%
+  aggregate(., list(symbol = v$symbol),checkBin) %>%
+    rename_at(vars(v$cols ),
+             ~paste0(substr(v$cols,1,2),".",
+                     v$time[cols],".")) 
+
+}
+```
+## DATASET DA MÉDIAS DAS AMOSTRA 
+```{r}
+
+# AQUI IREMOS GERAR NOSSO DATASET DA MÉDIAS DAS AMOSTRA A CADA TIME POINT PARA A LINHAGEM MDAMB231
+cellline.breast <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer")
+
+breast.mean <- 
+  expr.EGEOD18494.netnodes %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.breast])) %>% meanExpr(.) 
+  
+breast.mean %>% 
+  knitr::kable(.)
+
+```
+
+## GERAÇÃO DE ARQUIVO DE SAÍDA DO TIPO CSV
+```{r}
+# AQUI IREMOS GERAR UM ARQUIVO DE SAÍDA DO TIPO CSV. ESTE ARQUIVO SERVIRÁ DE ENTRADA PARA UM NOTEBOOK NO GOOGLE COLAB
+# PARA QUE POSSAMOS BINARIZAR PELO MÉTODO DO K-MEANS ITERATIVO 
+csv_breast_fileName <- "breast_raw_data.csv"
+rdata_breast_fileName <- "breast_raw_data.RData"
+pathCSV = "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/ZhouGenes/experimental_time_serie/"
+pathRData = "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/ZhouGenes/experimental_time_serie/"
+write.csv(t(breast.mean),paste0(pathCSV,csv_breast_fileName))
+MDAMB231 <- read.csv(paste0(pathCSV,csv_breast_fileName))
+save(MDAMB231, file = paste0(pathRData,rdata_breast_fileName))
+
+```
+
+## BINARIZAÇÃO POR K-MEANS
+```{r}
+# AQUI CHAMAMOS A FUNÇÃO QUE BINARIZA PELO KMEANS TRADICIONAL
+breast.bin.km1 <- breast.mean %>% binKM1(.) 
+breast.bin.km1 %>% knitr::kable(.)
+```
+
+## BINARIZAÇÃO POR BASC
+```{r}
+# AQUI CHAMAMOS A FUNÇÃO QUE BINARIZA PELO BASC
+breast.bin.basc <- breast.mean %>% binBASC(.) 
+breast.bin.basc %>% knitr::kable(.)
+```
+
+
+```{r}
+
+#AQUI GERAMOS OS MAPAS DE CALOR DA BINARIZAÇÃO
+
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN/EGEOD18494_KM2/ZhouGenes/AvgBin_Heatmap")
+allTimePoints = list(0,4,8,12)
+plotHeatMap(breast.bin.km1[,2:5],"breast_KM1_Zhou",allTimePoints)
+plotHeatMap(breast.bin.basc[,2:5],"breast_BASCA_Zhou",allTimePoints)
+
+```
+```{r}
+#geneNames = rownames(breast.bin.km1$symbol)
+
+ibn <- reconstructNetwork(breast.bin.km1, 
+                          method="bestfit",
+                          returnPBN=FALSE,
+                          readableFunctions=TRUE)
+
+print(ibn)
+```
