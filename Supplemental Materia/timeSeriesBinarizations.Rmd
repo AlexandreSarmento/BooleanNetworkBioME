@@ -1,0 +1,776 @@
+---
+title: "Binarizations and IBN"
+author: "Patrick,Alexandre,Beatriz, Dhiego"
+date: "16/12/2021"
+output: pdf_document
+---
+
+---
+title: "Binarization through K-MEANS, iterative K-MEANS and BASCA. Learn through BestFit"
+author: "Patrick,  Alexandre, Diego e Beatriz"
+date: "12/7/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r}
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs","Binarize","BoolNet")
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+packages_bioconductor = c("Biobase", "GEOquery", "vsn")
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+```
+
+```{r}
+library(ellipsis)
+library(gplots)
+library(RColorBrewer)
+library(reshape2)
+library(ggplot2)
+library(knitr)
+library(png)
+```
+## SETTING VARIABLES TO HEATMAPS
+```{r}
+my_palette <- colorRampPalette(c("blue", "gray", "yellow"))(n = 299)
+col_breaks = c(seq(0,.1,length=100),  # for green
+               seq(.11,0.9,length=100),              # for yellow
+               seq(0.91,1,length=100))
+```
+## FUNCTION TO GENERATE HEATMAP
+```{r}
+plotHeatMap <- function(sample,titleDescripter,timePoints){  
+  rnames <- rownames(sample)          # assign labels in column 1 to "rnames"                           
+  mat_data <- data.matrix(sample[,1:ncol(sample)])  # transform column 2- # of timepts into a matrix
+  rownames(mat_data) <- rnames                  # assign row names 
+  colnames(mat_data) <- timePoints
+  # creates a 5 x 5 inch image
+  outputName =paste(titleDescripter,".png",sep="") 
+  png(outputName,   # create PNG for the heat map        
+      width = 4*500,        # 5 x 300 pixels
+      height = 3*500,
+      res = 500,            # 300 pixels per inch
+      pointsize = 6)      # smaller font size
+  par(cex.main=0.8,cex.lab = 1)
+  heatmap.2(mat_data,
+            offsetCol = 2,
+            offsetRow = 0,
+            srtCol=270,
+            notecol="black",      # change font color of cell labels to black
+            density.info="none",  # turns off density plot inside color legend
+            trace="none",         # turns off trace lines inside the heat map
+            margins =c(9,12),     # widens margins around plot
+            col=my_palette,       # use on color palette defined earlier 
+            breaks=col_breaks,    # enable color transition at specified limits
+            dendrogram="none",    # don't draw dendrograms
+            Colv="NA",            # turn off column clustering
+            Rowv="NA",            # turn off row clustering
+            #srtCol=0,
+            adjCol= c(.5,.5),
+            adjRow= c(0,.5),
+            sepwidth=c(0.001,0.001),
+            sepcolor="black",
+            colsep=1:ncol(mat_data),
+            rowsep=1:nrow(mat_data),
+            cexRow = 1.0,
+            cexCol=.8,
+            keysize = 1,
+            #density.info=c("histogram","density","none"),
+            key.title = NA,
+            key.ylab = NA,
+            key.xlab = "Binarized Abundance",
+            key.ytickfun = NA
+  )
+  dev.off()               # close the PNG device  
+}
+```
+## CALLING THE DATABASE
+```{r}
+setwd("/storages/caico/home/alexandresarmento/R")
+load("/storages/caico/home/alexandresarmento/R/DataBases/data.EGEOD18494.Rdata")
+
+eset <- ExpressionSet(assayData = as.matrix(expr.EGEOD18494),probeNames = row.names(expr.EGEOD18494))
+expr.EGEOD18494 <- exprs(justvsn(eset))
+
+```
+## SETTING DATABASE
+```{r}
+
+netnodes.symbols<- c("HIF1A","CDKN1A","ATR","TP53","MDM2","AKT1","BBC3","MIR17HG",
+                     "PTEN","BCL2L11","FOXO3","CASP3","CYCS","EP300")
+
+netnodes.nickname <- c("HIF1A","P21","ATR","TP53","MDM2","AKT","PUMA","miR1792",
+                "PTEN","BIM","FOXO","CASP3","CYTOC","EP300")
+
+netnodes.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% netnodes.symbols]
+
+# Select the probes and genes
+expr.EGEOD18494.netnodes <- as.data.frame(expr.EGEOD18494) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% netnodes.probes) %>% 
+  merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% netnodes.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) 
+
+```
+## GETTING MEAN OF SAMPLE
+```{r}
+
+meanExpr <- function(b){
+  
+  cols <- data.EGEOD18494$codes %in% names(b)
+  
+  b <-b %>%
+  rename_at(vars(data.EGEOD18494$codes[cols] ),
+             ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>% 
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>% 
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>% 
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>% 
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>% 
+  aggregate(., list(symbol = b$symbol), median) %>%
+  dplyr::select(c("symbol","no.ctrl","hy.4h", "hy.8h", "hy.12h")) 
+
+}
+```
+## K-MEANS BIN FUNCTION
+```{r}
+binKM1 <- function(b){
+
+  cols <- names(b)
+  
+  binarizeTimeSeries(b[,-1], method="kmeans")$binarizedMeasurements %>%
+  as.data.frame(.) %>%
+    rename_at(vars(b$cols ),
+             ~paste0(substr(b$cols,1,2),".",
+                     b$time[cols],".")) 
+  
+}
+```
+## BASC-A BIN FUNCTION
+```{r}
+binBASCA <- function(v){
+
+  cols <- names(v)
+  binarizeMatrix(v[,-1], method = "BASCA",tau=0.2) %>%
+  as.data.frame(.) %>%
+    rename_at(vars(v$cols ),
+             ~paste0(substr(v$cols,1,2),".",
+                     v$time[cols],".")) 
+
+}
+```
+## BASC-B BIN FUNCTION
+```{r}
+binBASCB <- function(v){
+
+  cols <- names(v)
+  binarizeMatrix(v[,-1], method = "BASCB",tau=0.2) %>%
+  as.data.frame(.) %>%
+    rename_at(vars(v$cols ),
+             ~paste0(substr(v$cols,1,2),".",
+                     v$time[cols],".")) 
+
+}
+```
+## MDAMB231 TIME-SERIE
+```{r}
+cellline.breast <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer")
+
+breast.mean <- 
+  expr.EGEOD18494.netnodes %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.breast])) %>% meanExpr(.) 
+  
+breast.mean %>% 
+  knitr::kable(.)
+
+```
+## HepG2 TIME-SERIE
+```{r}
+cellline.hepatoma <- (data.EGEOD18494$cell_line == "HepG2 hepatoma")
+
+hepatoma.mean <- 
+  expr.EGEOD18494.netnodes %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.hepatoma])) %>% meanExpr(.) 
+  
+hepatoma.mean %>% 
+  knitr::kable(.)
+```
+## U87 TIME-SERIE
+```{r}
+cellline.glioma <- (data.EGEOD18494$cell_line == "U87 glioma")
+
+glioma.mean <- 
+  expr.EGEOD18494.netnodes %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellline.glioma])) %>% meanExpr(.) 
+  
+glioma.mean %>% 
+  knitr::kable(.)
+```
+## MDAMB231 K-MEANS BIN
+```{r}
+breast.bin.km1 <- breast.mean %>% binKM1(.) 
+breast.bin.km1 %>% knitr::kable(.)
+```
+## HepG2 K-MEANS BIN
+```{r}
+hepatoma.bin.km1 <- hepatoma.mean %>% binKM1(.) 
+hepatoma.bin.km1 %>% knitr::kable(.)
+```
+## U87 K-MEANS BIN
+```{r}
+glioma.bin.km1 <- glioma.mean %>% binKM1(.) 
+glioma.bin.km1 %>% knitr::kable(.)
+```
+## MDAMB231 BASCA BIN
+```{r}
+breast.bin.basca <- breast.mean %>% binBASCA(.) 
+breast.bin.basca %>% knitr::kable(.)
+```
+## HepG2 BASCA BIN
+```{r}
+hepatoma.bin.basca <- hepatoma.mean %>% binBASCA(.) 
+hepatoma.bin.basca %>% knitr::kable(.)
+```
+## U87 BASCA BIN
+```{r}
+glioma.bin.basca <- glioma.mean %>% binBASCA(.) 
+glioma.bin.basca %>% knitr::kable(.)
+```
+## MDAMB231 BASCB BIN
+```{r}
+breast.bin.bascb <- breast.mean %>% binBASCB(.) 
+breast.bin.bascb %>% knitr::kable(.)
+```
+## HepG2 BASCB BIN
+```{r}
+hepatoma.bin.bascb <- hepatoma.mean %>% binBASCB(.) 
+hepatoma.bin.bascb %>% knitr::kable(.)
+```
+## U87 BASCB BIN
+```{r}
+glioma.bin.bascb <- glioma.mean %>% binBASCB(.) 
+glioma.bin.bascb %>% knitr::kable(.)
+```
+
+## EDITING MDAMB231 DATABASE ACCORDING BINARIZATION METHODS AND SAVE INITIAL CONDITIONS
+```{r}
+newbreast.bin.km1 = list('S1' = breast.bin.km1)
+rownames(newbreast.bin.km1$S1) <- breast.mean$symbol
+colnames(newbreast.bin.km1$S1) <- NULL
+newbreast.bin.km1$S1 <- newbreast.bin.km1$S1[netnodes.symbols,]
+rownames(newbreast.bin.km1$S1) <- netnodes.nickname
+initalConditions <- data.frame(newbreast.bin.km1$S1[,1],
+                               newbreast.bin.km1$S1[,2],
+                               newbreast.bin.km1$S1[,3],
+                               newbreast.bin.km1$S1[,4])
+fileName <-"breastkm1IC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+newbreast.bin.basca = list('S1' = breast.bin.basca)
+rownames(newbreast.bin.basca$S1) <- breast.mean$symbol
+newbreast.bin.basca$S1 <- newbreast.bin.basca$S1[,-(5:6)] 
+colnames(newbreast.bin.basca$S1) <- NULL
+newbreast.bin.basca$S1 <- newbreast.bin.basca$S1[netnodes.symbols,]
+rownames(newbreast.bin.basca$S1) <- netnodes.nickname
+initalConditions <- data.frame(newbreast.bin.basca$S1[,1],
+                               newbreast.bin.basca$S1[,2],
+                               newbreast.bin.basca$S1[,3],
+                               newbreast.bin.basca$S1[,4])
+fileName <-"breastbascaIC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+ 
+newbreast.bin.bascb = list('S1' = breast.bin.bascb)
+rownames(newbreast.bin.bascb$S1) <- breast.mean$symbol
+newbreast.bin.bascb$S1 <- newbreast.bin.bascb$S1[,-(5:6)] 
+colnames(newbreast.bin.bascb$S1) <- NULL
+newbreast.bin.bascb$S1 <- newbreast.bin.bascb$S1[netnodes.symbols,]
+rownames(newbreast.bin.bascb$S1) <- netnodes.nickname
+initalConditions <- data.frame(newbreast.bin.bascb$S1[,1],
+                               newbreast.bin.bascb$S1[,2],
+                               newbreast.bin.bascb$S1[,3],
+                               newbreast.bin.bascb$S1[,4])
+fileName <-"breastbascbIC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+```
+
+# EDITING HepG2 DATABASE ACCORDING BINARIZATION METHODS
+```{r}
+newhepatoma.bin.km1 = list('S1' = hepatoma.bin.km1)
+rownames(newhepatoma.bin.km1$S1) <- hepatoma.mean$symbol
+colnames(newhepatoma.bin.km1$S1) <- NULL
+newhepatoma.bin.km1$S1 <- newhepatoma.bin.km1$S1[netnodes.symbols,]
+rownames(newhepatoma.bin.km1$S1) <- netnodes.nickname
+initalConditions <- data.frame(newhepatoma.bin.km1$S1[,1],
+                               newhepatoma.bin.km1$S1[,2],
+                               newhepatoma.bin.km1$S1[,3],
+                               newhepatoma.bin.km1$S1[,4])
+fileName <-"hepatomakm1IC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+newhepatoma.bin.basca = list('S1' = hepatoma.bin.basca)
+rownames(newhepatoma.bin.basca$S1) <- hepatoma.mean$symbol
+newhepatoma.bin.basca$S1 <- newhepatoma.bin.basca$S1[,-(5:6)] 
+colnames(newhepatoma.bin.basca$S1) <- NULL
+newhepatoma.bin.basca$S1 <- newhepatoma.bin.basca$S1[netnodes.symbols,]
+rownames(newhepatoma.bin.basca$S1) <- netnodes.nickname
+initalConditions <- data.frame(newhepatoma.bin.basca$S1[,1],
+                               newhepatoma.bin.basca$S1[,2],
+                               newhepatoma.bin.basca$S1[,3],
+                               newhepatoma.bin.basca$S1[,4])
+fileName <-"hepatomabascaIC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+newhepatoma.bin.bascb = list('S1' = hepatoma.bin.bascb)
+rownames(newhepatoma.bin.bascb$S1) <- hepatoma.mean$symbol
+newhepatoma.bin.bascb$S1 <- newhepatoma.bin.bascb$S1[,-(5:6)] 
+colnames(newhepatoma.bin.bascb$S1) <- NULL
+newhepatoma.bin.bascb$S1 <- newhepatoma.bin.bascb$S1[netnodes.symbols,]
+rownames(newhepatoma.bin.bascb$S1) <- netnodes.nickname
+initalConditions <- data.frame(newhepatoma.bin.bascb$S1[,1],
+                               newhepatoma.bin.bascb$S1[,2],
+                               newhepatoma.bin.bascb$S1[,3],
+                               newhepatoma.bin.bascb$S1[,4])
+fileName <-"hepatomabascbIC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+```
+# EDITING U87 DATABASE ACCORDING BINARIZATION METHODS
+```{r}
+newglioma.bin.km1 = list('S1' = glioma.bin.km1)
+rownames(newglioma.bin.km1$S1) <- glioma.mean$symbol
+colnames(newglioma.bin.km1$S1) <- NULL
+newglioma.bin.km1$S1 <- newglioma.bin.km1$S1[netnodes.symbols,]
+rownames(newglioma.bin.km1$S1) <- netnodes.nickname
+initalConditions <- data.frame(newglioma.bin.km1$S1[,1],
+                               newglioma.bin.km1$S1[,2],
+                               newglioma.bin.km1$S1[,3],
+                               newglioma.bin.km1$S1[,4])
+fileName <-"gliomakm1IC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+newglioma.bin.basca = list('S1' = glioma.bin.basca)
+rownames(newglioma.bin.basca$S1) <- glioma.mean$symbol
+newglioma.bin.basca$S1 <- newglioma.bin.basca$S1[,-(5:6)] 
+colnames(newglioma.bin.basca$S1) <- NULL
+newglioma.bin.basca$S1 <- newglioma.bin.basca$S1[netnodes.symbols,]
+rownames(newglioma.bin.basca$S1) <- netnodes.nickname
+initalConditions <- data.frame(newglioma.bin.basca$S1[,1],
+                               newglioma.bin.basca$S1[,2],
+                               newglioma.bin.basca$S1[,3],
+                               newglioma.bin.basca$S1[,4])
+fileName <-"gliomabascaIC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+newglioma.bin.bascb = list('S1' = glioma.bin.bascb)
+rownames(newglioma.bin.bascb$S1) <- glioma.mean$symbol
+newglioma.bin.bascb$S1 <- newglioma.bin.bascb$S1[,-(5:6)] 
+colnames(newglioma.bin.bascb$S1) <- NULL
+newglioma.bin.bascb$S1 <- newglioma.bin.bascb$S1[netnodes.symbols,]
+rownames(newglioma.bin.bascb$S1) <- netnodes.nickname
+initalConditions <- data.frame(newglioma.bin.bascb$S1[,1],
+                               newglioma.bin.bascb$S1[,2],
+                               newglioma.bin.bascb$S1[,3],
+                               newglioma.bin.bascb$S1[,4])
+fileName <-"gliomabascbIC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+
+```
+## GENERATING BINARIZATION HEATMAP INSIDE AN USER FOLDER
+```{r}
+allTimePoints = list(0,4,8,12)
+```
+## BREAST HEATMAP OF BINARIZATION THROUGH K-MEANS
+```{r}
+plotHeatMap(newbreast.bin.km1$S1,"breast_KM1",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/breast_KM1.png")
+```
+## INFERRED BOOLEAN NETWORK FROM MDAMB231 TIME-SERIE. K-MEANS BIN 
+```{r}
+breast.bin.km1.ibn <- reconstructNetwork(newbreast.bin.km1$S1,
+                                     method="bestfit",
+                                     returnPBN=FALSE,
+                                     readableFunctions=TRUE)
+print(breast.bin.km1.ibn)
+```
+## HEPATOMA HEATMAP OF BINARIZATION THROUGH K-MEANS
+```{r}
+plotHeatMap(newhepatoma.bin.km1$S1,"hepatoma_KM1",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/hepatoma_KM1.png")
+```
+## INFERRED BOOLEAN NETWORK FROM HepG2 TIME-SERIE. KMEANS BIN
+```{r}
+hepatoma.bin.km1.ibn <- reconstructNetwork(newhepatoma.bin.km1$S1,
+                                     method="bestfit",
+                                     returnPBN=FALSE,
+                                     readableFunctions=TRUE)
+print(hepatoma.bin.km1.ibn)
+```
+##  GLIOMA HEATMAP OF BINARIZATION THROUGH K-MEANS
+```{r}
+plotHeatMap(newglioma.bin.km1$S1,"glioma_KM1",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/glioma_KM1.png")
+```
+## INFERRED BOOLEAN NETWORK FROM U87 TIME-SERIE. KMEANS BIN
+```{r}
+glioma.bin.km1.ibn <- reconstructNetwork(newglioma.bin.km1$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(glioma.bin.km1.ibn)
+```
+## BREAST HEATMAP OF BINARIZATION THROUGH BASCA TAU = 0.2
+```{r}
+plotHeatMap(newbreast.bin.basca$S1,"breast_BASCA_tau_0.2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/breast_BASCA_tau_0.2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM MDAMB231 TIME-SERIE. BASCA BIN TAU = 0.2
+```{r}
+breast.bin.basca.ibn <- reconstructNetwork(newbreast.bin.basca$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(breast.bin.basca.ibn)
+```
+## HEPATOMA HEATMAP OF BINARIZATION THROUGH BASCA TAU = 0.2
+```{r}
+plotHeatMap(newhepatoma.bin.basca$S1,"hepatoma_BASCA_tau_0.2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/hepatoma_BASCA_tau_0.2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM HepG2 TIME-SERIE. BASCA BIN TAU = 0.2
+```{r}
+hepatoma.bin.basca.ibn <- reconstructNetwork(newhepatoma.bin.basca$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(hepatoma.bin.basca.ibn)
+```
+## GLIOMA HEATMAP OF BINARIZATION THROUGH BASCA TAU = 0.2
+```{r}
+plotHeatMap(newglioma.bin.basca$S1,"glioma_BASCA_tau_0.2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/glioma_BASCA_tau_0.2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM U87 TIME-SERIE. BASCA BIN TAU = 0.2
+```{r}
+glioma.bin.basca.ibn <- reconstructNetwork(newglioma.bin.basca$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(glioma.bin.basca.ibn)
+```
+## BREAST HEATMAP OF BINARIZATION THROUGH BASCB TAU = 0.2
+```{r}
+plotHeatMap(newbreast.bin.bascb$S1,"breast_BASCB_tau_0.2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/breast_BASCB_tau_0.2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM MDAMB231 TIME-SERIE. BASCB BIN TAU = 0.2
+```{r}
+breast.bin.bascb.ibn <- reconstructNetwork(newbreast.bin.bascb$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(breast.bin.bascb.ibn)
+```
+## HEPATOMA HEATMAP OF BINARIZATION THROUGH BASCB TAU = 0.2
+```{r}
+plotHeatMap(newhepatoma.bin.bascb$S1,"hepatoma_BASCB_tau_0.2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/hepatoma_BASCB_tau_0.2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM HepG2 TIME-SERIE. BASCB BIN TAU = 0.2
+```{r}
+hepatoma.bin.bascb.ibn <- reconstructNetwork(newhepatoma.bin.bascb$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(hepatoma.bin.bascb.ibn)
+```
+## GLIOMA HEATMAP OF BINARIZATION THROUGH BASCB TAU = 0.2
+```{r}
+plotHeatMap(newglioma.bin.bascb$S1,"glioma_BASCB_tau_0.2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/figures/glioma_BASCB_tau_0.2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM U87 TIME-SERIE. BASCB BIN TAU = 0.2
+```{r}
+glioma.bin.bascb.ibn <- reconstructNetwork(newglioma.bin.bascb$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(glioma.bin.bascb.ibn)
+```
+## SET DATA TO INFER BOOOLEAN NETWORK FROM iterative K-MEANS BINARIZATION. MDAMB231
+```{r}
+filename = "/storages/caico/home/alexandresarmento/R/DataBases/binBreast/breast_raw_data_"
+mergedSampleList = list()
+for(i in 1:10){
+  sampleName = paste("/storages/caico/home/alexandresarmento/R/DataBases/binBreast/breast_raw_data_", toString(i), ".csv",sep="")
+  mergedSample <- read.csv(sampleName, comment.char="#", header=FALSE, check.names=FALSE, row.names=1)
+  mergedSampleList[[i]] = mergedSample
+}
+s1 = mergedSampleList[[1]]
+noRows = length(s1[,1])
+noColumns = length(s1[1,])
+rowList = c(1:noRows)
+colList = c(1:noColumns)
+popAverage = data.frame(row.names = rownames(data.frame(s1)))
+popCumulative = data.frame(row.names = rownames(data.frame(s1)))
+rownames(popAverage) = rownames(data.frame(s1))
+for(rowVal in rowList){
+  for(colVal in colList){
+    cumulativeVal = 0
+    for(sample in mergedSampleList){
+      tmpVal = sample[rowVal,colVal]
+      cumulativeVal = tmpVal + cumulativeVal 
+    }
+    popCumulative[rowVal,colVal]= cumulativeVal
+    popAverage[rowVal,colVal]= round(cumulativeVal/length(mergedSampleList),1)
+  }
+}
+```
+## round the sample averages to their closest integer value. value < .5 = 0 value > 0.5 = 1
+```{r}
+avgSampleList = list('S1' = popAverage)
+binAvgSampleListBreast = avgSampleList
+name = 'S1'
+for(name in names(avgSampleList)){
+  
+  tmpSample = avgSampleList[[name]]
+  noRows = length(tmpSample[,1])
+  noColumns = length(tmpSample[1,])
+  rowList = c(1:noRows)
+  colList = c(1:noColumns)
+  for(rowVal in rowList){
+    for(colVal in colList){
+      tmpVal = tmpSample[rowVal,colVal]
+      if(tmpVal > .5){
+        tmpSample[rowVal,colVal] = 1
+      }
+      if(tmpVal < .5){
+        tmpSample[rowVal,colVal] = 0
+      }
+      # the binarized version of avg sample list
+      binAvgSampleListBreast[[name]] = tmpSample
+    }
+  }
+}
+```
+
+```{r}
+for(name in names(binAvgSampleListBreast)){
+  fileName =paste("/storages/caico/home/alexandresarmento/R/DataBases/binBreast/binAvg",name,".csv",sep="")
+  write.table(binAvgSampleListBreast[[name]], file =fileName, sep= ','
+              ,quote=FALSE, row.names = rownames(binAvgSampleListBreast[[name]])) 
+}
+```
+## save initial conditions
+```{r}
+binAvgSampleListBreast$S1 <- binAvgSampleListBreast$S1[netnodes.nickname,]
+initalConditions <- data.frame(binAvgSampleListBreast$S1$V1,
+                               binAvgSampleListBreast$S1$V2,
+                               binAvgSampleListBreast$S1$V3,
+                               binAvgSampleListBreast$S1$V4)
+fileName <-"breastkm2IC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+```
+## iterative K-MEANS BINARIZATION (MDAMB231)
+```{r}
+plotHeatMap(binAvgSampleListBreast$S1,"breast_KM2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/breast_KM2.png")
+```
+## INFERRED BOOLEAN NETWORK FROM MDAMB231 TIME-SERIE.
+```{r}
+breast.bin.km2.ibn <- reconstructNetwork(binAvgSampleListBreast$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(breast.bin.km2.ibn)
+```
+## SET DATA TO INFER BOOOLEAN NETWORK FROM iterative K-MEANS BINARIZATION. HepG2
+```{r}
+filename = "/storages/caico/home/alexandresarmento/R/DataBases/binHepatoma/hepatoma_raw_data_"
+mergedSampleList = list()
+for(i in 1:100){
+  sampleName = paste("/storages/caico/home/alexandresarmento/R/DataBases/binHepatoma/hepatoma_raw_data_", toString(i), ".csv",sep="")
+  mergedSample <- read.csv(sampleName, comment.char="#", header=FALSE, check.names=FALSE, row.names=1)
+  mergedSampleList[[i]] = mergedSample
+}
+s1 = mergedSampleList[[1]]
+noRows = length(s1[,1])
+noColumns = length(s1[1,])
+rowList = c(1:noRows)
+colList = c(1:noColumns)
+popAverage = data.frame(row.names = rownames(data.frame(s1)))
+popCumulative = data.frame(row.names = rownames(data.frame(s1)))
+rownames(popAverage) = rownames(data.frame(s1))
+for(rowVal in rowList){
+  for(colVal in colList){
+    cumulativeVal = 0
+    for(sample in mergedSampleList){
+      tmpVal = sample[rowVal,colVal]
+      cumulativeVal = tmpVal + cumulativeVal 
+    }
+    popCumulative[rowVal,colVal]= cumulativeVal
+    popAverage[rowVal,colVal]= round(cumulativeVal/length(mergedSampleList),1)
+  }
+}
+```
+## round the sample averages to their closest integer value. value < .5 = 0 value > 0.5 = 1
+```{r}
+avgSampleList = list('S1' = popAverage)
+binAvgSampleListHept = avgSampleList
+name = 'S1'
+for(name in names(avgSampleList)){
+  
+  tmpSample = avgSampleList[[name]]
+  noRows = length(tmpSample[,1])
+  noColumns = length(tmpSample[1,])
+  rowList = c(1:noRows)
+  colList = c(1:noColumns)
+  for(rowVal in rowList){
+    for(colVal in colList){
+      tmpVal = tmpSample[rowVal,colVal]
+      if(tmpVal > .5){
+        tmpSample[rowVal,colVal] = 1
+      }
+      if(tmpVal < .5){
+        tmpSample[rowVal,colVal] = 0
+      }
+      # the binarized version of avg sample list
+      binAvgSampleListHept[[name]] = tmpSample
+    }
+  }
+}
+```
+
+```{r}
+for(name in names(binAvgSampleListHept)){
+  fileName =paste("/storages/caico/home/alexandresarmento/R/DataBases/binHepatoma/binAvg",name,".csv",sep="")
+  write.table(binAvgSampleListHept[[name]], file =fileName, sep= ','
+              ,quote=FALSE, row.names = rownames(binAvgSampleListHept[[name]])) 
+}
+```
+## save initial conditions
+```{r}
+binAvgSampleListHept$S1 <- binAvgSampleListHept$S1[netnodes.nickname,]
+initalConditions <- data.frame(binAvgSampleListHept$S1$V1,
+                               binAvgSampleListHept$S1$V2,
+                               binAvgSampleListHept$S1$V3,
+                               binAvgSampleListHept$S1$V4)
+fileName <-"hepatomakm2IC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+```
+
+```{r}
+plotHeatMap(binAvgSampleListHept$S1,"hepatoma_KM2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/hepatoma_KM2.png")
+```
+
+```{r}
+hepatoma.bin.km2.ibn <- reconstructNetwork(binAvgSampleListHept$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(hepatoma.bin.km2.ibn)
+```
+## SET DATA TO INFER BOOOLEAN NETWORK FROM iterative K-MEANS BINARIZATION. U87
+```{r}
+filename = "/storages/caico/home/alexandresarmento/R/DataBases/binHepatoma/glioma_raw_data_"
+mergedSampleList = list()
+for(i in 1:100){
+  sampleName = paste("/storages/caico/home/alexandresarmento/R/DataBases/binGlioma/glioma_raw_data_", toString(i), ".csv",sep="")
+  mergedSample <- read.csv(sampleName, comment.char="#", header=FALSE, check.names=FALSE, row.names=1)
+  mergedSampleList[[i]] = mergedSample
+}
+s1 = mergedSampleList[[1]]
+noRows = length(s1[,1])
+noColumns = length(s1[1,])
+rowList = c(1:noRows)
+colList = c(1:noColumns)
+popAverage = data.frame(row.names = rownames(data.frame(s1)))
+popCumulative = data.frame(row.names = rownames(data.frame(s1)))
+rownames(popAverage) = rownames(data.frame(s1))
+for(rowVal in rowList){
+  for(colVal in colList){
+    cumulativeVal = 0
+    for(sample in mergedSampleList){
+      tmpVal = sample[rowVal,colVal]
+      cumulativeVal = tmpVal + cumulativeVal 
+    }
+    popCumulative[rowVal,colVal]= cumulativeVal
+    popAverage[rowVal,colVal]= round(cumulativeVal/length(mergedSampleList),1)
+  }
+}
+```
+## round the sample averages to their closest integer value. value < .5 = 0 value > 0.5 = 1
+```{r}
+avgSampleList = list('S1' = popAverage)
+binAvgSampleListGlio = avgSampleList
+name = 'S1'
+for(name in names(avgSampleList)){
+  
+  tmpSample = avgSampleList[[name]]
+  noRows = length(tmpSample[,1])
+  noColumns = length(tmpSample[1,])
+  rowList = c(1:noRows)
+  colList = c(1:noColumns)
+  for(rowVal in rowList){
+    for(colVal in colList){
+      tmpVal = tmpSample[rowVal,colVal]
+      if(tmpVal > .5){
+        tmpSample[rowVal,colVal] = 1
+      }
+      if(tmpVal < .5){
+        tmpSample[rowVal,colVal] = 0
+      }
+      # the binarized version of avg sample list
+      binAvgSampleListGlio[[name]] = tmpSample
+    }
+  }
+}
+```
+
+```{r}
+for(name in names(binAvgSampleListGlio)){
+  fileName =paste("/storages/caico/home/alexandresarmento/R/DataBases/binGlioma/binAvg",name,".csv",sep="")
+  write.table(binAvgSampleListGlio[[name]], file =fileName, sep= ','
+              ,quote=FALSE, row.names = rownames(binAvgSampleListGlio[[name]])) 
+}
+```
+## save initial conditions
+```{r}
+binAvgSampleListGlio$S1 <- binAvgSampleListGlio$S1[netnodes.nickname,]
+initalConditions <- data.frame(binAvgSampleListGlio$S1$V1,
+                               binAvgSampleListGlio$S1$V2,
+                               binAvgSampleListGlio$S1$V3,
+                               binAvgSampleListGlio$S1$V4)
+fileName <-"gliomakm2IC.Rdata"
+save(initalConditions, file = paste0("/storages/caico/home/alexandresarmento/R/",fileName))
+```
+
+```{r}
+plotHeatMap(binAvgSampleListGlio$S1,"glioma_KM2",allTimePoints)
+knitr::include_graphics("/storages/caico/home/alexandresarmento/R/glioma_KM2.png")
+```
+
+```{r}
+glioma.bin.km2.ibn <- reconstructNetwork(binAvgSampleListGlio$S1,
+                                       method="bestfit",
+                                       returnPBN=FALSE,
+                                       readableFunctions=TRUE)
+print(glioma.bin.km2.ibn)
+```

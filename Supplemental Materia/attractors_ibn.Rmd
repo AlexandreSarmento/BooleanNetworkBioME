@@ -1,0 +1,834 @@
+---
+title: "Attractors of IBNs"
+author: "Patrick,Alexandre,Beatriz, Dhiego"
+date: "16/12/2021"
+output: pdf_document
+---
+
+---
+title: "Attractors and GST"
+author: "Patrick,  Alexandre, Diego e Beatriz"
+date: "12/14/2021"
+output: pdf_document
+---
+
+```{r}
+library(BoolNet)
+library(igraph)
+```
+
+```{r}
+setwd("/storages/caico/home/alexandresarmento/R")
+```
+# GET ATTRACTOR AND GLOBAL STATE TRANSITIONS (GST) THRGOUGH IBN FROM ITERATIVE K-MEANS BINARIZATION
+
+## ATTRACTOR IN SYNCRONOUS MODE (MDAMB231 IBN). 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_breast_KM2.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## MDAMB231 INITIAL CONDITIONS 
+```{r}
+load("/storages/caico/home/alexandresarmento/R/DataBases/breastkm2IC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[10] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[10] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[10] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[10] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (HepG2 IBN)
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_hepatoma_KM2.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attrhepat <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attrhepat,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## HepG2 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/hepatomakm2IC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[7] <- 1 
+basins1[11] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[7] <- 1 
+basins2[11] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[7] <- 1 
+basins3[11] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[7] <- 1 
+basins4[11] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (U87 IBN) 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_glioma_KM2.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## U87 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/gliomakm2IC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[10] <- 1
+basins1[12] <- 0
+basins1[11] <- 1
+basins1[9] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[10] <- 1
+basins2[12] <- 0
+basins2[11] <- 1
+basins2[9] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[10] <- 1
+basins3[12] <- 0
+basins3[11] <- 1
+basins3[9] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[10] <- 1
+basins4[12] <- 0
+basins4[11] <- 1
+basins4[9] <- 1 
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+# GET ATTRACTOR AND GLOBAL STATE TRANSITIONS (GST) THRGOUGH IBN FROM K-MEANS BINARIZATION
+
+## ATTRACTOR IN SYNCRONOUS MODE (MDAMB231 IBN). 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_breast_KM1.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## MDAMB231 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/breastkm1IC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[10] <- 1
+basins1[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[10] <- 1
+basins2[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[10] <- 1
+basins3[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[10] <- 1
+basins4[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (HepG2 IBN)
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_hepatoma_KM1.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## HepG2 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/hepatomakm1IC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[7] <- 1
+basins1[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[7] <- 1
+basins2[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[7] <- 1
+basins3[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[7] <- 1
+basins4[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (U87 IBN) 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_glioma_KM1.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## U87 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/gliomakm1IC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[2] <- 0
+basins1[6] <- 0
+basins1[9] <- 1
+basins1[10] <- 1
+basins1[11] <- 1
+basins1[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[2] <- 0
+basins2[6] <- 0
+basins2[9] <- 1
+basins2[10] <- 1
+basins2[11] <- 1
+basins2[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[2] <- 0
+basins3[6] <- 0
+basins3[9] <- 1
+basins3[10] <- 1
+basins3[11] <- 1
+basins3[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[2] <- 0
+basins4[6] <- 0
+basins4[9] <- 1
+basins4[10] <- 1
+basins4[11] <- 1
+basins4[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+
+# GET ATTRACTOR AND GLOBAL STATE TRANSITIONS (GST) THRGOUGH IBN FROM BASCA_TAU =0.2 BINARIZATION
+
+## ATTRACTOR IN SYNCRONOUS MODE (MDAMB231 IBN). 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_breast_basca.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## MDAMB231 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/breastbascaIC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[10] <- 1
+basins1[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[10] <- 1
+basins2[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[10] <- 1
+basins3[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[10] <- 1
+basins4[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (HepG2 IBN)
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_hepatoma_basca.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## HepG2 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/hepatomabascaIC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[7] <- 1
+basins1[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[7] <- 1
+basins2[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[7] <- 1
+basins3[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[7] <- 1
+basins4[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (U87 IBN) 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_glioma_basca.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## U87 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/gliomabascaIC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[2] <- 0
+basins1[6] <- 0
+basins1[9] <- 1
+basins1[10] <- 1
+basins1[11] <- 1
+basins1[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[2] <- 0
+basins2[6] <- 0
+basins2[9] <- 1
+basins2[10] <- 1
+basins2[11] <- 1
+basins2[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[2] <- 0
+basins3[6] <- 0
+basins3[9] <- 1
+basins3[10] <- 1
+basins3[11] <- 1
+basins3[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[2] <- 0
+basins4[6] <- 0
+basins4[9] <- 1
+basins4[10] <- 1
+basins4[11] <- 1
+basins4[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+
+
+# GET ATTRACTOR AND GLOBAL STATE TRANSITIONS (GST) THRGOUGH IBN FROM BASCB_TAU =0.2 BINARIZATION
+
+## ATTRACTOR IN SYNCRONOUS MODE (MDAMB231 IBN). 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_breast_bascb.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## MDAMB231 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/breastbascbIC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[10] <- 1
+basins1[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[10] <- 1
+basins2[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[10] <- 1
+basins3[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (MDAMB231 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[10] <- 1
+basins4[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (HepG2 IBN)
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_hepatoma_bascb.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## HepG2 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/hepatomabascbIC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[6] <- 0
+basins1[7] <- 1
+basins1[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[6] <- 0
+basins2[7] <- 1
+basins2[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[6] <- 0
+basins3[7] <- 1
+basins3[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (HepG2 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[6] <- 0
+basins4[7] <- 1
+basins4[11] <- 1
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## ATTRACTOR IN SYNCRONOUS MODE (U87 IBN) 
+```{r}
+pathFile <- "/storages/caico/home/alexandresarmento/R/BNs/IBN_glioma_bascb.bn"
+booleanNetwork <- loadNetwork(pathFile)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+plotAttractors(attr,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+```
+## U87 INITIAL CONDITIONS 
+```{r}
+rm(initalConditions)
+load("/storages/caico/home/alexandresarmento/R/DataBases/gliomabascbIC.Rdata")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins1 <- initalConditions[[1]]
+basins1[2] <- 0
+basins1[6] <- 0
+basins1[9] <- 1
+basins1[10] <- 1
+basins1[11] <- 1
+basins1[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins1)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins2 <- initalConditions[[2]]
+basins2[2] <- 0
+basins2[6] <- 0
+basins2[9] <- 1
+basins2[10] <- 1
+basins2[11] <- 1
+basins2[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins2)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins3 <- initalConditions[[3]]
+basins3[2] <- 0
+basins3[6] <- 0
+basins3[9] <- 1
+basins3[10] <- 1
+basins3[11] <- 1
+basins3[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins3)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
+## GST TOWARD TO ATTRACTORS (U87 IBN)
+```{r}
+basins4 <- initalConditions[[4]]
+basins4[2] <- 0
+basins4[6] <- 0
+basins4[9] <- 1
+basins4[10] <- 1
+basins4[11] <- 1
+basins4[12] <- 0
+gst <- getPathToAttractor(booleanNetwork,basins4)
+plotSequence(sequence=gst,
+             drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff")
+```
