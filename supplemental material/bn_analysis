@@ -1,0 +1,77 @@
+library(BoolNet)
+library(igraph)
+install.packages('e1071')
+library('e1071')
+
+#pathFile <- "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/AleloMauro/shrNet.bn"
+pathFile <- "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/MDA_IBN2.bn"
+#pathFile <- "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN/TBNet4.bn"
+#pathFile <- "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/MCF7/MCF7_IBN.bn"
+#pathFile <- "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/dataODE/nonSteadyState1.bn"
+booleanNetwork <- loadNetwork(pathFile)
+print(booleanNetwork)
+attr <- getAttractors(booleanNetwork,type="synchronous")
+attrTab <- plotAttractors(attr,
+                          drawLegend = FALSE,
+                          onColor = "#ffff00",
+                          offColor = "#0000ff",
+                          allInOnePlot=TRUE)
+
+file = "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN/tbnAttr.RData"
+#file = "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/mda231attr.RData"
+matAttr <- attrTab$`4`
+save(matAttr,file = file)
+
+load("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN/tbnAttr.RData")
+tbn <- matAttr
+load("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/mda231attr.RData")
+ibn <- matAttr
+h <- c(0,0,0,0)
+for (i in 1:ncol(ibn)) {
+  
+  h[i] <- hamming.distance(ibn[1:nrow(ibn),i],tbn[1:nrow(tbn),i])
+
+}
+
+
+OE <- fixGenes(booleanNetwork, "Mdm2",1)
+attrOE <- getAttractors(OE,type="synchronous")
+plotAttractors(attrOE,
+               drawLegend = FALSE,
+               onColor = "#ffff00",
+               offColor = "#0000ff",
+               allInOnePlot=TRUE)
+
+# ibnAttrState1 <- c(1,0,0,0,1,0,1,1,1,1,0,0,1,1)
+# ibnAttrState2 <- c(1,1,1,1,1,0,0,0,0,0,0,1,1)
+# ibnAttrState3 <- c(0,1,1,1,0,1,1,1,1,1,1,1,0)
+# ibnAttrState4 <- c(0,0,0,0,0,1,1,1,0,0,1,1,0)
+# ibnAttrState5 <- c(1,0,0,0,0,1,0,0,0,0,0,0,0,0)
+
+path <- getPathToAttractor(OE,ibnAttrState1)
+plotSequence(sequence=path,
+             drawLegend = FALSE,
+             onColor = "#ffff00",
+             offColor = "#0000ff",
+             allInOnePlot=TRUE)
+
+
+pickAttr = 1
+attrTarget = getBasinOfAttraction(attr, pickAttr)
+baSinsTrans <- as.data.frame(table(attrTarget$transitionsToAttractor))
+baSinsTrans$percentage = (baSinsTrans$Freq/sum(baSinsTrans$Freq))*100
+
+numberOfNodes = length(attr$stateInfo$genes)
+numberOfStateNetwork = 2^numberOfNodes
+numberOfAttrBasin = attr$attractor[[pickAttr]]$basinSize
+percentageOfAttr = (numberOfAttrBasin/numberOfStateNetwork)
+
+
+
+
+
+plotStateGraph(attr,
+               highlightAttractors = TRUE,
+               colorBasins = FALSE,
+               drawLegend = TRUE, 
+               drawLabels = TRUE)
