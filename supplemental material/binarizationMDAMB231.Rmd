@@ -1,0 +1,324 @@
+---
+title: "binarization of MDAMB231"
+author: "Patrick Terremate, Dhiego Andrade, Alexandre S. Queiroga, Beatriz Stransky"
+date: '2022-04-10'
+output: pdf_document
+---
+
+```{r}
+packages_cran = c("igraph", "BoolNet", "BiocManager", "tidyverse", "fs","Binarize")
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+packages_bioconductor = c("Biobase", "GEOquery", "vsn")
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+```
+
+```{r}
+library(ellipsis)
+library(igraph)
+library(BoolNet)
+library(Binarize)
+library(gplots)
+library(RColorBrewer)
+library(reshape2)
+library(ggplot2)
+library(knitr)
+library(png)
+```
+## SETTING VARIABLES TO HEATMAPS
+```{r}
+my_palette <- colorRampPalette(c("blue", "gray", "yellow"))(n = 299)
+col_breaks = c(seq(0,.1,length=100),  # for green
+               seq(.11,0.9,length=100),              # for yellow
+               seq(0.91,1,length=100))
+
+plotHeatMap <- function(sample,titleDescripter,timePoints){  
+  rnames <- rownames(sample)          # assign labels in column 1 to "rnames"                           
+  mat_data <- data.matrix(sample[,1:ncol(sample)])  # transform column 2- # of timepts into a matrix
+  rownames(mat_data) <- rnames                  # assign row names 
+  colnames(mat_data) <- timePoints
+  # creates a 5 x 5 inch image
+  outputName =paste(titleDescripter,".png",sep="") 
+  png(outputName,   # create PNG for the heat map        
+      width = 4*500,        # 5 x 300 pixels
+      height = 3*500,
+      res = 500,            # 300 pixels per inch
+      pointsize = 6)      # smaller font size
+  par(cex.main=0.8,cex.lab = 1)
+  heatmap.2(mat_data,
+            offsetCol = 2,
+            offsetRow = 0,
+            srtCol=270,
+            notecol="black",      # change font color of cell labels to black
+            density.info="none",  # turns off density plot inside color legend
+            trace="none",         # turns off trace lines inside the heat map
+            margins =c(9,12),     # widens margins around plot
+            col=my_palette,       # use on color palette defined earlier 
+            breaks=col_breaks,    # enable color transition at specified limits
+            dendrogram="none",    # don't draw dendrograms
+            Colv="NA",            # turn off column clustering
+            Rowv="NA",            # turn off row clustering
+            #srtCol=0,
+            adjCol= c(.5,.5),
+            adjRow= c(0,.5),
+            sepwidth=c(0.001,0.001),
+            sepcolor="black",
+            colsep=1:ncol(mat_data),
+            rowsep=1:nrow(mat_data),
+            cexRow = 1.0,
+            cexCol=.8,
+            keysize = 1,
+            #density.info=c("histogram","density","none"),
+            key.title = NA,
+            key.ylab = NA,
+            key.xlab = "Binarized Abundance",
+            key.ytickfun = NA
+  )
+  dev.off()               # close the PNG device  
+}
+```
+## GETTING MEAN OF SAMPLE
+```{r}
+
+meanExpr <- function(timeSerie){
+  
+  cols <- data.EGEOD18494$codes %in% names(timeSerie)
+  timeSerie <- timeSerie %>%
+  rename_at(vars(data.EGEOD18494$codes[cols] ),
+             ~paste0(substr(data.EGEOD18494$condition[cols],1,2),".",
+                    data.EGEOD18494$time[cols],".",
+                    substr(data.EGEOD18494$cell_line[cols],1,2), ".",
+                    data.EGEOD18494$rep[cols])) %>% 
+  mutate(no.ctrl = rowMeans(dplyr::select(.,starts_with("no.control")), na.rm = TRUE)) %>% 
+  mutate(hy.4h = rowMeans(dplyr::select(.,starts_with("hy.4h")), na.rm = TRUE)) %>% 
+  mutate(hy.8h = rowMeans(dplyr::select(.,starts_with("hy.8h")), na.rm = TRUE)) %>% 
+  mutate(hy.12h = rowMeans(dplyr::select(.,starts_with("hy.12h")), na.rm = TRUE)) %>% 
+  aggregate(., list(symbol = timeSerie$symbol), median) %>%
+  dplyr::select(c("symbol","no.ctrl","hy.4h", "hy.8h", "hy.12h")) 
+
+}
+```
+## K-MEANS BIN FUNCTION
+```{r}
+binKM1 <- function(timeSerie){
+
+  cols <- names(timeSerie)
+  
+  binarizeTimeSeries(timeSerie[,-1], method="kmeans")$binarizedMeasurements
+ 
+  
+}
+```
+## BASC-A BIN FUNCTION
+```{r}
+binBASCA <- function(timeSerie,methodName,tauValue){
+
+  binarizeMatrix(timeSerie[,-1], method = methodName,tau=tauValue) 
+ 
+}
+```
+## BASC-B BIN FUNCTION
+```{r}
+binBASCB <- function(timeSerie,methodName,tauValue,sigmaValue){
+
+  cols <- names(timeSerie)
+  binarizeMatrix(timeSerie[,-1], method = methodName,tau=tauValue,sigma = sigmaValue)
+
+}
+```
+## READ AND MAKE CONSENSUS OF iterative K-MEANS BINARIZATION
+```{r}
+readBinDataIKM <- function(filename,binFileName,numberOfFiles) {
+  
+  mergedSampleList = list()
+  for(i in 1:numberOfFiles){
+    sampleName = paste(filename,toString(i),".csv",sep="")
+    mergedSample <- read.csv(sampleName, comment.char = "#", header=FALSE, check.names=FALSE,row.names=1)
+    mergedSampleList[[i]] = mergedSample
+  }
+
+  s1 = mergedSampleList[[1]]
+  noRows = length(s1[,1])
+  noColumns = length(s1[1,])
+  rowList = c(1:noRows)
+  colList = c(1:noColumns)
+  exprAverage = data.frame(row.names = rownames(data.frame(s1)))
+  exprCumulative = data.frame(row.names = rownames(data.frame(s1)))
+  rownames(exprAverage) = rownames(data.frame(s1))
+
+  for(rowVal in rowList){
+    for(colVal in colList){
+      cumulativeVal = 0
+      for(sample in mergedSampleList){
+        tmpVal = sample[rowVal,colVal]
+        cumulativeVal = tmpVal + cumulativeVal 
+      }
+      exprCumulative[rowVal,colVal]= cumulativeVal
+      exprAverage[rowVal,colVal]= round(cumulativeVal/length(mergedSampleList),1)
+    }
+  }
+  
+  avgSampleList = list('S1' = exprAverage)
+  binAvgSampleList = avgSampleList
+  name = 'S1'
+  
+  for(name in names(avgSampleList)){
+    
+    tmpSample = avgSampleList[[name]]
+    noRows = length(tmpSample[,1])
+    noColumns = length(tmpSample[1,])
+    rowList = c(1:noRows)
+    colList = c(1:noColumns)
+    for(rowVal in rowList){
+      for(colVal in colList){
+        tmpVal = tmpSample[rowVal,colVal]
+        if(tmpVal > 0.5){
+          tmpSample[rowVal,colVal] = 1
+        }
+        if(tmpVal < 0.5){
+        tmpSample[rowVal,colVal] = 0
+        }
+        # the binarized version of avg sample list
+        binAvgSampleList[[name]] = tmpSample
+      }
+    }
+  }
+  
+  for(name in names(binAvgSampleList)){
+    fileBinName =paste(binFileName,name,".csv",sep="")
+    write.table(binAvgSampleList[[name]], file = fileBinName, sep= ',',quote=FALSE, row.names = 
+                  rownames(binAvgSampleList[[name]]))
+  
+  }
+  
+  return(binAvgSampleList) 
+}
+```
+## CALLING THE DATABASE
+```{r}
+setwd("C:/Users/Alexandre Sarmento/Documents/R/dataAnalysis_UFRN/BooleanNetworkBioME")
+load("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/data/data.EGEOD18494.RData")
+# eset <- ExpressionSet(assayData = as.matrix(expr.EGEOD18494),probeNames = row.names(expr.EGEOD18494))
+# expr.EGEOD18494 <- exprs(justvsn(eset))
+
+```
+## SETTING TIME SERIE
+```{r}
+
+netnodes.symbols<- c("AKT1","ATR","BAX","EGLN1","HIF1A","HIF1AN","MDM2","PFKL",
+                     "PPP1R10","TP53","VEGFA","PIK3CA","INPP5D","BNIP3")
+
+netnodes.nickname <- c("akt","atr","bax","phd","hif1a","fih","mdm2","pfkl",
+                       "pnuts","tp53","vegf","pip3","ship","bnip3")
+
+netnodes.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% netnodes.symbols]
+
+# Select the probes and genes
+expr.EGEOD18494.netnodes <- as.data.frame(expr.EGEOD18494) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% netnodes.probes) %>% 
+  merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% netnodes.symbols, c("probes","symbol")], by = "probes") %>% 
+  #distinct(symbol, .keep_all = TRUE) %>% # Take the first one
+  dplyr::select(!(probes)) 
+
+cellLine <- (data.EGEOD18494$cell_line == "MDA-MB231 breast cancer")
+
+timeSerie <- 
+  expr.EGEOD18494.netnodes %>%
+  dplyr::select(c("symbol", data.EGEOD18494$codes[cellLine])) %>% meanExpr(.) 
+  
+timeSerie %>% 
+  knitr::kable(.)
+
+```
+## SAVE DATABASE IN CSV TO BINARIZE THROUGH ITERATIVE K-MEANS IN GOOGLE COLAB
+```{r}
+write.csv(t(timeSerie),"~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/MDAMB231_.csv")
+```
+## GENERATING BINARIZATION HEATMAP INSIDE AN USER FOLDER
+```{r}
+allTimePoints = list(0,4,8,12)
+cellLineName = "MDAMB231"
+```
+## MDAMB231 K-MEANS BIN
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231")
+bin.km1 <- binKM1(timeSerie) 
+new.bin.km1 = list('S1' = bin.km1)
+rownames(new.bin.km1$S1) <- timeSerie$symbol
+colnames(new.bin.km1$S1) <- NULL
+new.bin.km1$S1 <- new.bin.km1$S1[netnodes.symbols,]
+rownames(new.bin.km1$S1) <- netnodes.nickname
+plotBinKm1 <- plotHeatMap(new.bin.km1$S1,paste(cellLineName,"KM1"),allTimePoints)
+plotBinKm1
+```
+## MDAMB231 BASCA BIN
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231")
+methodName = "BASCA"
+tauValue = 0.01
+bin.basca <- binBASCA(timeSerie,methodName,tauValue)
+new.bin.basca = list('S1' = bin.basca)
+rownames(new.bin.basca$S1) <- timeSerie$symbol
+new.bin.basca$S1 <- new.bin.basca$S1[,-(5:6)] 
+colnames(new.bin.basca$S1) <- NULL
+new.bin.basca$S1 <- new.bin.basca$S1[netnodes.symbols,]
+rownames(new.bin.basca$S1) <- netnodes.nickname
+plotBinBASCA <- plotHeatMap(new.bin.basca$S1,paste(cellLineName,"_BASCA_","t_",tauValue),allTimePoints)
+plotBinBASCA
+#knitr::include_graphics("/folder/subfolder/MDAMB231_basca_tau_0.0001.png")
+```
+## MDAMB231 BASCB BIN SIGMA = 4
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231")
+methodName = "BASCB"
+tauValue = 0.001
+sigmaValue = 8
+bin.bascb <- binBASCB(timeSerie,methodName,tauValue,sigmaValue)
+new.bin.bascb = list('S1' = bin.bascb)
+rownames(new.bin.bascb$S1) <- timeSerie$symbol
+new.bin.bascb$S1 <- new.bin.bascb$S1[,-(5:6)] 
+colnames(new.bin.bascb$S1) <- NULL
+new.bin.bascb$S1 <- new.bin.bascb$S1[netnodes.symbols,]
+rownames(new.bin.bascb$S1) <- netnodes.nickname
+plotBinBASCB <- plotHeatMap(new.bin.bascb$S1,
+                            paste(cellLineName,"_BASCB_","t_",
+                            tauValue,"_s_",sigmaValue),allTimePoints)
+
+plotBinBASCB
+#knitr::include_graphics("C:/Users/Alexandre Sarmento/Documents/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/MDAMB231_bascb_tau_0.0001_sigma_4.png")
+```
+## HEATMAP OF BINARIZATION THROUGH Iterative-KM 
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231")
+filename = "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/IKM2/MDAMB231_"
+binFileName = "~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/IKM2/binAvg"
+numberOfFiles = 100
+binAvgSampleList <- readBinDataIKM(filename,binFileName,numberOfFiles)
+plotBinIKM  <- plotHeatMap(binAvgSampleList$S1,"MDAMB231_iKM",allTimePoints)
+plotBinIKM
+#knitr::include_graphics("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/mdamb231/IKM2/MDAMB231_iKM.png")
+```
+
+```{r}
+# new.bin.bascb$S1
+net<- reconstructNetwork(new.bin.bascb$S1,
+                         method="bestfit",
+                         maxK=1,
+                         readableFunctions=TRUE,
+                         returnPBN=FALSE)
+net
+
+```

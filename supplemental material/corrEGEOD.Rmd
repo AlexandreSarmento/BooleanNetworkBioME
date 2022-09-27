@@ -1,0 +1,202 @@
+---
+title: "EGEOD_CELL_LINES"
+author: "ASQ"
+date: "12/02/2021"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+packages_cran = c("pheatmap","ggplot2","rstatix","cowplot","BiTrinA","igraph", "BoolNet", "BiocManager", "tidyverse", "fs")
+# Install and load packages
+package.check <- lapply(packages_cran, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    install.packages(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+packages_bioconductor = c("Biobase", "GEOquery", "vsn", "hgu133plus2.db")
+# Install and load packages
+package.check <- lapply(packages_bioconductor, FUN = function(x) {
+  if (!require(x, character.only = TRUE)) {
+    BiocManager::install(x, dependencies = TRUE)
+    library(x, character.only = TRUE)
+  }
+})
+
+
+```
+
+```{r}
+setwd("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/TBN_IBN")
+load("~/R/dataAnalysis_UFRN/BooleanNetworkBioME/data/data.EGEOD18494.Rdata")
+
+```
+
+```{r}
+atots.symbols <- c("AKT1","ATR","BAX","EGLN1",
+                   "HIF1A","HIF1AN","MDM2","PFKL",
+                   "PPP1R10","TP53","VEGFA","PIK3CA",
+                   "INPP5D")
+
+#atots.symbols <- c("PFKL")
+
+atots.probes <- anno.EGEOD18494$probes[anno.EGEOD18494$symbol %in% atots.symbols]
+
+expr.EGEOD18494.atots <- as.data.frame(expr.EGEOD18494) %>% 
+  rownames_to_column('probes') %>% 
+  filter(probes %in% atots.probes) %>% 
+  merge(anno.EGEOD18494[anno.EGEOD18494$symbol %in% atots.symbols, c("probes","symbol")], by = "probes") %>% 
+  group_by(symbol) %>%
+  summarise_at(vars(-probes), funs(mean(., na.rm=TRUE)))  %>%
+  column_to_rownames(var = "symbol") %>%
+  dplyr::select(c(data.EGEOD18494$codes[data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"]))
+
+```
+
+
+```{r}
+
+expr.EGEOD18494.atots.bin <- binarizeMatrix(expr.EGEOD18494.atots)
+
+expr.EGEOD18494.atots.bin$symbol <- row.names(expr.EGEOD18494.atots.bin)
+
+row <- data.EGEOD18494$cell_line == "MDA-MB231 breast cancer"
+expr.EGEOD18494.atots.bin <- expr.EGEOD18494.atots.bin[, c(as.character(data.EGEOD18494$codes[row]), c("threshold", "p.value", "symbol"))]
+
+names(expr.EGEOD18494.atots.bin) <- c(paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row]), c("threshold", "p.value", "symbol"))
+
+```
+
+
+```{r}
+
+expr.EGEOD18494.atots.mean <- expr.EGEOD18494.atots.bin %>%
+ mutate(norm = rowMeans(dplyr::select(., starts_with("norm"))),
+        hypo.4h = rowMeans(dplyr::select(., starts_with("hypo.4h"))),
+        hypo.8h = rowMeans(dplyr::select(., starts_with("hypo.8h"))),
+        hypo.12h = rowMeans(dplyr::select(., starts_with("hypo.12h"))))  %>%
+  dplyr::select(., -ends_with(c(".1",".2", ".3")))
+
+```
+
+
+```{r}
+
+expr.EGEOD18494.atots.pivot <- expr.EGEOD18494.atots.mean %>%
+  group_by(symbol) %>%
+  pivot_longer(cols = starts_with(c("Norm","Hypo")), names_to = "codes", values_to = "value")
+
+
+```
+
+
+```{r}
+expr.EGEOD18494.atots.pivot$codes <- factor(expr.EGEOD18494.atots.pivot$codes,  levels =  c("norm", "hypo.4h" , "hypo.8h" , "hypo.12h"))
+
+expr.EGEOD18494.atots.pivot$time <- as.numeric(expr.EGEOD18494.atots.pivot$codes)
+
+```
+
+```{r}
+
+p.MDA <- ggplot(aes(x = factor(time), y = value, group = symbol, color="red"),  
+           data = expr.EGEOD18494.atots.pivot[expr.EGEOD18494.atots.pivot$symbol %in% atots.symbols,]) +
+  geom_point() + 
+  geom_line() + 
+  scale_x_discrete(breaks = c(1,2,3,4), 
+                 labels = c("0h", "4h" , "8h" , "12h")) +
+  xlab("Conditions") + ylab("Gene Expression") +
+  ggtitle("MDAMB231") +
+  theme(legend.position = "none", axis.text.x=element_text(color = "black", size=7, angle=30, vjust=.8, hjust=0.8)) +
+  #geom_line(aes(linetype=Symbol, color=Symbol)) +
+  facet_wrap(~ symbol) 
+
+p.MDA
+
+```
+
+
+```{r}
+
+rstatix::mshapiro_test(expr.EGEOD18494.atots) %>% 
+  knitr::kable(.)
+
+```
+
+
+```{r}
+data.EGEOD18494$time <- factor(data.EGEOD18494$time,  levels =  c("control", "4h" , "8h" , "12h"))
+
+row <- data.EGEOD18494$cell_line == "HepG2 hepatoma"
+
+annotation_for_heatmap <- droplevels(data.frame(time = data.EGEOD18494$time[row], condition = data.EGEOD18494$condition[row]))
+
+row.names(annotation_for_heatmap) <- paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row])
+
+dists <- as.matrix(dist(t(expr.EGEOD18494.atots), method = "manhattan")) 
+
+rownames(dists) <- c(paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row]))
+colnames(dists) <- c(paste0(substr(data.EGEOD18494$condition[row],1,4),".", data.EGEOD18494$time[row], ".", data.EGEOD18494$rep[row]))
+
+hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
+
+diag(dists) <- NA 
+
+ann_colors <- list(  
+  time = RColorBrewer::brewer.pal(length(levels(data.EGEOD18494$time)), "Set2"),
+  condition = c("red", "blue")
+)
+
+ann_colors
+
+```
+
+```{r}
+
+names(ann_colors$time) <- levels(data.EGEOD18494$time)
+names(ann_colors$condition) <- levels(data.EGEOD18494$condition)
+
+pheatmap(dists, col = (hmcol), 
+         annotation_row = annotation_for_heatmap,
+         annotation_colors = ann_colors,
+         legend = TRUE, 
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("small dist", "large dist")),
+         main = "Clustering of Samples (EGEOD18494)")
+
+```
+
+
+```{r}
+
+data.EGEOD18494$time <- factor(data.EGEOD18494$time,  levels =  c("control", "4h" , "8h" , "12h 4h"))
+
+dists <- cor(t(expr.EGEOD18494.atots), use = "pairwise.complete.obs", method = "spearman")
+rownames(dists) <- rownames(expr.EGEOD18494.atots)
+hmcol <- rev(colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))(255))
+colnames(dists) <- rownames(expr.EGEOD18494.atots)
+diag(dists) <- NA 
+
+pheatmap(dists, #row = (hmcol), 
+         #annotation_col = annotation_for_heatmap,
+         #annotation_colors = ann_colors,
+         legend = TRUE, 
+         display_numbers = T,
+         treeheight_row = 0,
+         legend_breaks = c(min(dists, na.rm = TRUE), 
+                           max(dists, na.rm = TRUE)), 
+         legend_labels = (c("-1", "1")),
+         main = "Clustering of Gene Expression \n Spearman Correlation (EGEOD18494)")
+
+```
+
